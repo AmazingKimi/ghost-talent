@@ -83,10 +83,19 @@ class GitHubSource:
   except httpx.HTTPStatusError:return self._empty_external()
   rows=[]
   for pr in data.get("items",[])[:20]:
-   repo_url=str(pr.get("repository_url") or "");repo=repo_url.split("/repos/")[-1] if "/repos/" in repo_url else "";owner=repo.split("/",1)[0].lower() if "/" in repo else "";external=owner!=login.lower();recognized=repo.lower() in RECOGNIZED_UPSTREAM
-   if not external:continue
-   rows.append({"repository":repo,"number":pr.get("number"),"title":pr.get("title"),"url":pr.get("html_url"),"recognized_upstream":recognized,"core_path_signal":any(t in str(pr.get("title") or "").lower() for t in CORE_TERMS)})
-  recognized=sum(1 for x in rows if x["recognized_upstream"]);core=sum(1 for x in rows if x["core_path_signal"]);return {"available":True,"external_merged_prs":len(rows),"recognized_upstream_prs":recognized,"core_path_prs":core,"prs":rows[:8]}
+   repo_url=str(pr.get("repository_url") or "");repo=repo_url.split("/repos/")[-1] if "/repos/" in repo_url else "";owner=repo.split("/",1)[0].lower() if "/" in repo else "";recognized=repo.lower() in RECOGNIZED_UPSTREAM
+   if owner==login.lower():continue
+   rows.append({"repository":repo,"number":pr.get("number"),"title":pr.get("title"),"url":pr.get("html_url"),"recognized_upstream":recognized,"core_path_signal":False,"core_path_evidence":"not_inspected"})
+  # Core-path is a high-value claim: verify it from changed filenames, never from PR title alone.
+  inspect=[row for row in rows if row["recognized_upstream"]][:5]
+  async def verify(row):
+   try:files=await self._get(f"{API}/repos/{row['repository']}/pulls/{row['number']}/files",per_page=30)
+   except httpx.HTTPStatusError:return row
+   names=[str(f.get("filename") or "") for f in files];core_files=[name for name in names if self._is_core_path(name)]
+   return {**row,"core_path_signal":bool(core_files),"core_path_evidence":"changed_files","core_files":core_files[:6],"changed_files_sampled":len(names)}
+  verified=await asyncio.gather(*(verify(row) for row in inspect)) if inspect else []
+  by_key={(r["repository"],r["number"]):r for r in verified};rows=[by_key.get((r["repository"],r["number"]),r) for r in rows]
+  recognized=sum(1 for x in rows if x["recognized_upstream"]);core=sum(1 for x in rows if x["core_path_signal"] and x.get("core_path_evidence")=="changed_files");return {"available":True,"external_merged_prs":len(rows),"recognized_upstream_prs":recognized,"core_path_prs":core,"core_path_prs_inspected":len(verified),"prs":rows[:8]}
  async def _contribution_quality(self,item):
   repos=sorted(item.get("repositories",[]),key=lambda r:int(r.get("contributions",0)),reverse=True)
   if not repos:return self._empty_quality()
@@ -105,7 +114,7 @@ class GitHubSource:
  @staticmethod
  def _empty_quality(repository=None):return {"available":False,"repository":repository,"merged_pr_count":0,"sampled_pr_count":0,"top_pr":None}
  @staticmethod
- def _empty_external():return {"available":False,"external_merged_prs":0,"recognized_upstream_prs":0,"core_path_prs":0,"prs":[]}
+ def _empty_external():return {"available":False,"external_merged_prs":0,"recognized_upstream_prs":0,"core_path_prs":0,"core_path_prs_inspected":0,"prs":[]}
  @staticmethod
  def _event_counts(events):
   now=datetime.now(timezone.utc);d7=now-timedelta(days=7);d30=now-timedelta(days=30);d90=now-timedelta(days=90);c7=c30=c90=0;days=set();ts=[]
