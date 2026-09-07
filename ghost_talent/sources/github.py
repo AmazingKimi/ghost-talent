@@ -47,8 +47,7 @@ class GitHubSource:
         return selected
     @staticmethod
     def _noise_signals(item:dict,profile:dict|None)->dict:
-        login=str(item.get("login") or "").lower();reasons=[]
-        account_type=str((profile or {}).get("type") or "User")
+        login=str(item.get("login") or "").lower();reasons=[];account_type=str((profile or {}).get("type") or "User")
         if account_type!="User" or any(term in login for term in BOT_LOGIN_TERMS):reasons.append("bot_or_automation_identity")
         repos=item.get("repositories",[]);noisy=[]
         for repo in repos:
@@ -95,7 +94,7 @@ class GitHubSource:
                 if exc.response.status_code not in {403,404,429}:raise
             counts=self._event_counts(events);quality=self._empty_quality()
             if self.authenticated and index<quality_budget:quality=await self._contribution_quality(item)
-            return {**item,"primary_repository":self._primary_repo(item),"name":profile.get("name") if profile else None,"profile_url":profile.get("html_url") if profile else item["profile_url"],"followers":profile.get("followers",0) if profile else 0,"github_enrichment_complete":profile is not None,"noise":self._noise_signals(item,profile),"contribution_quality":quality,**counts}
+            return {**item,"github_user_id":profile.get("id") if profile else None,"blog":profile.get("blog") if profile else None,"company":profile.get("company") if profile else None,"location":profile.get("location") if profile else None,"primary_repository":self._primary_repo(item),"name":profile.get("name") if profile else None,"profile_url":profile.get("html_url") if profile else item["profile_url"],"followers":profile.get("followers",0) if profile else 0,"github_enrichment_complete":profile is not None,"noise":self._noise_signals(item,profile),"contribution_quality":quality,**counts}
         return await asyncio.gather(*(enrich(index,item) for index,item in enumerate(ranked)))
 
     async def _contribution_quality(self,item:dict)->dict:
