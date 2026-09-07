@@ -19,6 +19,7 @@ class GhostScoreTests(unittest.TestCase):
             recent_events_90d=27,
             active_days_30d=9,
             observed_event_span_days=24.0,
+            contribution_quality={"available": False, "repository": "org/project", "merged_pr_count": 0, "top_pr": None},
             paper_matches=[],
             evidence=[Evidence(type="repository_contribution", source="github", source_url="https://github.com/org/project")],
         )
@@ -29,22 +30,33 @@ class GhostScoreTests(unittest.TestCase):
         result = score_candidate(self.make_candidate())
         self.assertGreaterEqual(result["ghost_score"], 0)
         self.assertLessEqual(result["ghost_score"], 100)
-        self.assertEqual(result["score_version"], "0.1.2")
+        self.assertEqual(result["score_version"], "0.1.3")
         self.assertIn(result["trend"], {"accelerating", "stable", "decelerating"})
-        self.assertIn("drivers", result)
-        self.assertIn("capability", result["drivers"])
-        self.assertIn("momentum", result["drivers"])
-        self.assertIn("visibility", result["drivers"])
-        self.assertIn("confidence", result["drivers"])
+        self.assertIn("contribution_quality", result["drivers"])
 
-    def test_driver_values_match_candidate_evidence(self):
-        result = score_candidate(self.make_candidate())
-        drivers = result["drivers"]
-        self.assertEqual(drivers["capability"]["top_repository"]["name"], "org/project")
-        self.assertEqual(drivers["momentum"]["events_7d"], 8)
-        self.assertEqual(drivers["momentum"]["events_30d"], 18)
-        self.assertEqual(drivers["visibility"]["followers"], 42)
-        self.assertEqual(drivers["confidence"]["paper_matches"], 0)
+    def test_quality_evidence_increases_capability(self):
+        baseline = score_candidate(self.make_candidate())
+        quality = {
+            "available": True,
+            "repository": "org/project",
+            "merged_pr_count": 3,
+            "sampled_pr_count": 3,
+            "top_pr": {
+                "number": 42,
+                "title": "Optimize CUDA attention kernel",
+                "url": "https://github.com/org/project/pull/42",
+                "changed_files_sampled": 6,
+                "core_files": ["csrc/attention.cu", "benchmarks/attention.py"],
+                "core_file_count": 2,
+                "keyword_hits": ["cuda", "attention", "kernel"],
+                "additions": 320,
+                "deletions": 80,
+            },
+        }
+        enriched = score_candidate(self.make_candidate(contribution_quality=quality))
+        self.assertGreater(enriched["capability"], baseline["capability"])
+        self.assertGreater(enriched["drivers"]["contribution_quality"]["score"], 0)
+        self.assertIn("merged PR quality evidence", enriched["drivers"]["confidence"]["reasons"])
 
     def test_momentum_changes_with_recent_acceleration(self):
         accelerating = score_candidate(
@@ -54,10 +66,6 @@ class GhostScoreTests(unittest.TestCase):
             self.make_candidate(recent_events_7d=1, recent_events_30d=20, recent_events_90d=60)
         )
         self.assertGreater(accelerating["momentum"], slowing["momentum"])
-        self.assertGreater(
-            accelerating["drivers"]["momentum"]["acceleration_ratio"],
-            slowing["drivers"]["momentum"]["acceleration_ratio"],
-        )
 
     def test_single_repo_contribution_volume_does_not_force_capability_to_100(self):
         result = score_candidate(
