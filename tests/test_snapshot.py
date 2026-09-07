@@ -7,8 +7,8 @@ from ghost_talent.snapshot import save_snapshot
 
 
 class SnapshotTests(unittest.TestCase):
-    def test_snapshot_is_written_with_rank_and_score_version(self):
-        results = [
+    def sample_results(self):
+        return [
             {
                 "ghost_score": 61.2,
                 "capability": 63.0,
@@ -34,9 +34,10 @@ class SnapshotTests(unittest.TestCase):
             }
         ]
 
+    def test_snapshot_is_written_with_rank_and_score_version(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            meta = save_snapshot(root, "LLM inference CUDA Triton", results)
+            meta = save_snapshot(root, "LLM inference CUDA Triton", self.sample_results())
             snapshot_path = root / meta["path"]
             self.assertTrue(snapshot_path.exists())
 
@@ -46,6 +47,7 @@ class SnapshotTests(unittest.TestCase):
             self.assertEqual(payload["ranking"][0]["rank"], 1)
             self.assertEqual(payload["ranking"][0]["login"], "sample")
             self.assertEqual(payload["ranking"][0]["ghost_score"], 61.2)
+            self.assertEqual(payload["ranking"][0]["first_detected_at"], meta["first_detected"]["sample"])
 
     def test_repeated_runs_create_distinct_immutable_files(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -55,6 +57,21 @@ class SnapshotTests(unittest.TestCase):
             self.assertNotEqual(first["snapshot_id"], second["snapshot_id"])
             self.assertTrue((root / first["path"]).exists())
             self.assertTrue((root / second["path"]).exists())
+
+    def test_first_detected_is_never_overwritten(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = save_snapshot(root, "CUDA kernels", self.sample_results())
+            second = save_snapshot(root, "Triton inference", self.sample_results())
+
+            self.assertEqual(first["first_detected"]["sample"], second["first_detected"]["sample"])
+
+            ledger_path = root / "ledger" / "people" / "sample.json"
+            payload = json.loads(ledger_path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["first_detected_at"], first["first_detected"]["sample"])
+            self.assertEqual(payload["first_query"], "CUDA kernels")
+            self.assertEqual(payload["first_rank"], 1)
+            self.assertEqual(payload["first_score_version"], "0.1.3")
 
 
 if __name__ == "__main__":
