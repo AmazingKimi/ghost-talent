@@ -19,21 +19,74 @@ def _technical_focus(candidate: dict[str, Any]) -> list[str]:
     return [term for term, _ in sorted(hits.items(), key=lambda item: (-item[1], item[0]))[:6]]
 
 
+def _contribution_assessment(value: dict[str, Any]) -> dict[str, Any]:
+    core_files = value.get("core_files") or []
+    keywords = value.get("keyword_hits") or []
+    additions = int(value.get("additions") or 0)
+    deletions = int(value.get("deletions") or 0)
+    changed = additions + deletions
+
+    evidence_strength = 0
+    if core_files:
+        evidence_strength += 2
+    if keywords:
+        evidence_strength += 1
+    if changed >= 50:
+        evidence_strength += 1
+    if changed >= 250:
+        evidence_strength += 1
+
+    if evidence_strength >= 4:
+        level = "strong"
+    elif evidence_strength >= 2:
+        level = "moderate"
+    else:
+        level = "limited"
+
+    facts = []
+    if core_files:
+        facts.append(f"touches {len(core_files)} sampled core files")
+    if keywords:
+        facts.append("technical signals: " + ", ".join(keywords[:6]))
+    if changed:
+        facts.append(f"sampled diff: +{additions} / -{deletions}")
+
+    return {
+        "evidence_strength": level,
+        "evidence_facts": facts,
+        "interpretation": (
+            "Evidence supports a technically substantive contribution worth review."
+            if level == "strong" else
+            "Evidence suggests technical relevance, but the contribution should be reviewed before making a stronger claim."
+            if level == "moderate" else
+            "Collected metadata is insufficient to judge technical depth; inspect the source PR."
+        ),
+    }
+
+
 def _important_contributions(candidate: dict[str, Any]) -> list[dict[str, Any]]:
     rows = []
     for evidence in candidate.get("evidence", []):
         if evidence.get("type") != "merged_pull_request":
             continue
         value = evidence.get("value") or {}
+        assessment = _contribution_assessment(value)
         rows.append({
             "title": value.get("title") or f"Merged PR #{value.get('number', '?')}",
             "repository": value.get("repository"),
+            "number": value.get("number"),
             "url": evidence.get("source_url"),
             "observed_at": evidence.get("observed_at"),
             "confidence": evidence.get("confidence"),
             "core_file_count": value.get("core_file_count"),
+            "core_files": value.get("core_files") or [],
             "keyword_hits": value.get("keyword_hits") or [],
+            "additions": value.get("additions", 0),
+            "deletions": value.get("deletions", 0),
+            **assessment,
         })
+    strength_order = {"strong": 2, "moderate": 1, "limited": 0}
+    rows.sort(key=lambda row: (strength_order.get(row["evidence_strength"], 0), int(row.get("core_file_count") or 0)), reverse=True)
     return rows[:5]
 
 
@@ -59,7 +112,7 @@ def build_dossier(row: dict[str, Any]) -> dict[str, Any]:
         why_now.append("Current evidence does not meet a strong early-attention threshold")
 
     return {
-        "schema_version": "0.1",
+        "schema_version": "0.2",
         "identity": {
             "login": candidate.get("login"),
             "name": candidate.get("name"),
@@ -84,6 +137,7 @@ def build_dossier(row: dict[str, Any]) -> dict[str, Any]:
         "important_contributions": contributions,
         "evidence": candidate.get("evidence") or [],
         "limitations": [
+            "Contribution assessments describe collected PR metadata, not an independent code review.",
             "This dossier is generated only from currently collected public evidence.",
             "Missing evidence is not inferred.",
             "Uncertain cross-source identity matches are not treated as verified.",
