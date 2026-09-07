@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <title>Ghost Talent</title>
   <style>
     :root { color-scheme: light; --ink:#111; --muted:#6d6d6d; --line:#e8e8e8; --paper:#fafafa; }
@@ -127,7 +128,11 @@ form.addEventListener('submit', async event => {
     const response = await fetch(`/api/scout?q=${encodeURIComponent(term)}&limit=20`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || 'Scout failed');
-    meta.textContent = `${data.count} candidates · ranked from current public evidence`;
+    const snapshot = data.snapshot || {};
+    const snapshotLabel = snapshot.observed_at
+      ? ` · snapshot locked ${snapshot.observed_at.replace('T', ' ').replace('Z', ' UTC')}`
+      : '';
+    meta.textContent = `${data.count} candidates · ranked from current public evidence${snapshotLabel}`;
     results.innerHTML = data.results.map(card).join('') || '<div class="empty">No candidates found.</div>';
   } catch (error) {
     meta.textContent = error.message;
