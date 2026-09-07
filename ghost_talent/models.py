@@ -19,7 +19,10 @@ class Candidate:
     profile_url: str
     followers: int
     repositories: list[dict[str, Any]]
+    recent_events_7d: int
     recent_events_30d: int
     recent_events_90d: int
+    active_days_30d: int
+    observed_event_span_days: float
     paper_matches: list[dict[str, Any]]
     evidence: list[Evidence]
