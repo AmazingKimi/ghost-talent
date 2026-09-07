@@ -6,7 +6,7 @@ The roadmap is intentionally public so methodology changes, product scope and be
 
 ## v0.1 — Public foundation
 
-Status: in progress
+Status: substantially complete
 
 - [x] GitHub repository discovery
 - [x] contributor discovery
@@ -20,37 +20,48 @@ Status: in progress
 - [x] first-detected ledger
 - [x] Ghost Radar / EARLY SIGNAL
 - [x] local macOS launcher
-- [ ] explicit source-status reporting
-- [ ] stronger identity resolution
-- [ ] subject IDs across evidence records
+- [x] explicit source-status reporting
+- [x] conservative identity handling
+- [x] subject IDs across evidence records
 
 ## v0.2 — Time becomes the moat
 
 Goal: turn isolated rankings into a longitudinal intelligence system.
 
-- [ ] score history per candidate
-- [ ] Radar history per candidate
-- [ ] Rising Fast detection
-- [ ] rank delta and score delta
-- [ ] query/cohort history
+- [x] score history per candidate
+- [x] Radar history per candidate
+- [x] Rising Fast detection
+- [x] rank delta and score delta
+- [x] query-scoped candidate history
+- [x] 7-day and 30-day trajectory semantics
+- [x] local watchlist runner
 - [ ] snapshot browser
-- [ ] historical `as_of_date` plumbing
+- [ ] historical `as_of_date` plumbing for retrospective backtests
 - [ ] persistent local cache
 - [ ] source degradation history
+- [ ] automatic OS-level scheduling for Watch
 
 ## v0.3 — Benchmark
 
 Goal: test whether Ghost Talent actually finds people earlier than simple visibility baselines.
 
-- [ ] frozen benchmark cohorts
-- [ ] versioned breakout definitions
-- [ ] Precision@K
-- [ ] breakout rate by score bucket
-- [ ] Breakout Lead Time
+- [x] frozen benchmark cohort format and immutable freeze command
+- [x] versioned Breakout Outcome v0.1 definition
+- [x] Precision@K evaluation engine
+- [x] comparison against followers / stars / raw contributions
+- [x] Breakout Lead Time calculation
+- [x] outcome-adjudication template
+- [x] no-future-leakage publication protocol
+- [ ] freeze first real production cohort from local Scout history
+- [ ] 30-day outcome adjudication
+- [ ] 90-day outcome adjudication
+- [ ] 180-day outcome adjudication
+- [ ] breakout rate by Ghost Score bucket
 - [ ] calibration analysis
-- [ ] comparison against followers / stars / raw contributions
-- [ ] publish wins and misses
-- [ ] reproducible benchmark artifacts
+- [ ] publish wins and misses from a mature cohort
+- [ ] reproducible public benchmark artifacts
+
+Protocol: [`BENCHMARK.md`](BENCHMARK.md)
 
 ## v0.4 — Multi-source talent graph
 
@@ -64,6 +75,7 @@ Goal: test whether Ghost Talent actually finds people earlier than simple visibi
 
 ## v0.5 — Watch
 
+- [x] query watchlist runner
 - [ ] candidate watchlists
 - [ ] score-change alerts
 - [ ] new high-quality PR alerts
