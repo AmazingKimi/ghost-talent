@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <title>Ghost Talent</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <style>
     :root { color-scheme: light; --ink:#111; --muted:#6d6d6d; --line:#e8e8e8; --paper:#fafafa; }
     * { box-sizing: border-box; }
@@ -27,7 +27,8 @@
     .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:20px 0; }
     .metric strong { display:block; font-size:16px; }
     .metric span { font-size:10px; color:var(--muted); }
-    .trend { display:inline-block; font-size:12px; font-weight:650; margin-bottom:14px; }
+    .trend { display:inline-block; font-size:12px; font-weight:650; margin-bottom:10px; }
+    .first-detected { font-size:11px; color:var(--muted); margin:0 0 14px; text-transform:uppercase; letter-spacing:.06em; }
     .why { border-top:1px solid var(--line); padding-top:14px; margin-top:2px; }
     .why-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
     .why div { font-size:12px; line-height:1.5; margin:5px 0; color:#333; }
@@ -54,9 +55,16 @@ const form = document.getElementById('form');
 const q = document.getElementById('q');
 const meta = document.getElementById('meta');
 const results = document.getElementById('results');
+let firstDetected = {};
 
 function esc(value) {
   return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function formatDate(value) {
+  if (!value) return 'unknown';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString().slice(0, 10);
 }
 
 function evidenceRows(candidate) {
@@ -100,6 +108,7 @@ function driverRows(row) {
 
 function card(row) {
   const c = row.candidate;
+  const detected = firstDetected[c.login];
   return `<article class="card">
     <div class="top">
       <div><div class="name">${esc(c.name || c.login)}</div><div class="login">@${esc(c.login)}</div></div>
@@ -112,6 +121,7 @@ function card(row) {
       <div class="metric"><strong>${row.evidence_confidence}</strong><span>Confidence</span></div>
     </div>
     <div class="trend">${esc(row.trend.toUpperCase())} · v${esc(row.score_version || '')}</div>
+    <div class="first-detected">First detected · ${esc(formatDate(detected))}</div>
     <div class="why">${driverRows(row)}</div>
     <div class="evidence">${evidenceRows(c) || '<div>No supporting evidence returned.</div>'}</div>
     <div class="evidence"><div><a href="${esc(c.profile_url)}" target="_blank" rel="noreferrer">↗ GitHub profile</a></div></div>
@@ -128,11 +138,9 @@ form.addEventListener('submit', async event => {
     const response = await fetch(`/api/scout?q=${encodeURIComponent(term)}&limit=20`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || 'Scout failed');
-    const snapshot = data.snapshot || {};
-    const snapshotLabel = snapshot.observed_at
-      ? ` · snapshot locked ${snapshot.observed_at.replace('T', ' ').replace('Z', ' UTC')}`
-      : '';
-    meta.textContent = `${data.count} candidates · ranked from current public evidence${snapshotLabel}`;
+    firstDetected = data.snapshot?.first_detected || {};
+    const locked = data.snapshot?.observed_at ? ` · snapshot locked ${data.snapshot.observed_at.replace('T', ' ').replace('Z', ' UTC')}` : '';
+    meta.textContent = `${data.count} candidates · ranked from current public evidence${locked}`;
     results.innerHTML = data.results.map(card).join('') || '<div class="empty">No candidates found.</div>';
   } catch (error) {
     meta.textContent = error.message;
