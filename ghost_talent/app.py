@@ -5,9 +5,10 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from .scout import scout
+from .snapshot import save_snapshot
 
 
-app = FastAPI(title="Ghost Talent", version="0.1.0")
+app = FastAPI(title="Ghost Talent", version="0.2.0")
 ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -26,14 +27,20 @@ async def favicon():
 async def run_scout(q: str = Query(min_length=2, max_length=120), limit: int = 20):
     try:
         results = await scout(q, limit=max(1, min(limit, 20)))
-        return {"query": q, "count": len(results), "results": results}
+        snapshot = save_snapshot(ROOT, q, results)
+        return {
+            "query": q,
+            "count": len(results),
+            "results": results,
+            "snapshot": snapshot,
+        }
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Scout failed: {exc}") from exc
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "0.2.0"}
 
 
 def main():
