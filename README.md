@@ -1,22 +1,32 @@
 # Ghost Talent
 
-**Discover emerging AI talent before they become obvious.**
+**Open-source emerging talent intelligence.**
 
-Ghost Talent is an open-source **emerging AI talent intelligence** project for discovering rising AI engineers and researchers from public technical evidence.
+**Discover exceptional AI engineers and researchers before they become obvious.**
 
-It is built for a harder question than conventional sourcing:
+Ghost Talent starts from a technical frontier — CUDA, Triton, LLM inference, compilers, research areas — and looks for people whose demonstrated capability and momentum are rising faster than their public visibility.
 
-> Who is already demonstrating real technical capability and accelerating momentum, while still remaining relatively under-recognized?
+Recruiting search asks:
 
-Ghost Talent looks at public signals from GitHub and research indexes, turns them into inspectable evidence, and ranks people with a transparent model rather than a black-box popularity score.
+> I need a CUDA engineer. Who matches the role?
+
+Ghost Talent asks:
+
+> In CUDA / Triton / inference, who is getting stronger before the market notices?
+
+That is the category we are building: **Emerging Talent Intelligence**.
 
 ## Why Ghost Talent
 
-Most talent systems are optimized for people who are already easy to find: famous researchers, highly followed engineers, obvious maintainers, or candidates with polished résumés.
+Most talent systems are optimized for people who are already easy to find: famous researchers, highly followed engineers, obvious maintainers, polished résumés, or candidates already inside a hiring funnel.
 
 Ghost Talent focuses on the **visibility gap** between demonstrated technical strength and current public recognition.
 
 The goal is not to predict careers with certainty. The goal is to surface strong, rising technical people earlier and make every ranking traceable to evidence.
+
+In a September 2026 scan of adjacent public GitHub projects, we found several strong recruiting, sourcing, and hidden-talent tools. Among the projects reviewed, we did not find one centered on the same explicit combination of **technical momentum + visibility gap + public OSS evidence + immutable first-detection history + historical breakout benchmarking**.
+
+See [`docs/COMPETITIVE_LANDSCAPE.md`](docs/COMPETITIVE_LANDSCAPE.md) for the reviewed projects and category boundary.
 
 ## Ghost Score
 
@@ -31,7 +41,9 @@ The current deterministic model is:
 
 Raw contribution count is not treated as technical quality. Where available, Ghost Talent separately inspects merged pull requests, changed-file scope, and technical paths such as CUDA, Triton, kernels, compilers, inference, attention, GEMM, MoE, quantization, GPU and benchmarks.
 
-See [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md) for the full methodology and publication rules.
+Public specification: [`GHOST_SCORE.md`](GHOST_SCORE.md)
+
+Full methodology and publication rules: [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md)
 
 ## Ghost Radar
 
@@ -77,6 +89,8 @@ That makes it possible to ask, later:
 The long-term benchmark will measure metrics such as **Precision@K**, breakout rate by rank bucket, calibration, and **Breakout Lead Time** against simple baselines such as followers, stars and raw contribution count.
 
 Historical evaluation must never use information that was not observable at the original `as_of_date`.
+
+Code can be copied. A dated record of who was found before they became obvious cannot be recreated later.
 
 ## Run locally
 
@@ -135,13 +149,23 @@ Near-term priorities:
 
 ## v0.1.0
 
-Ghost Talent is now usable end-to-end as a local open-source technical talent radar. The `v0.1.0` milestone establishes the public methodology, evidence model, Ghost Score, Radar concept, immutable snapshots and first-detected ledger.
+Ghost Talent is usable end-to-end as a local open-source technical talent radar. The `v0.1.0` milestone establishes the public category, methodology, evidence model, Ghost Score, Radar concept, immutable snapshots and first-detected ledger.
 
 Release notes: [`releases/v0.1.0.md`](releases/v0.1.0.md)
 
+## Contributing
+
+Methodology critiques, evidence-source work, identity resolution, reproducibility, benchmark design, performance improvements, and documented failure cases are welcome.
+
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) and the public issues.
+
+## GitHub launch kit
+
+Suggested Topics, social-preview copy, category wording, and discovery phrases are kept in [`docs/GITHUB_LAUNCH.md`](docs/GITHUB_LAUNCH.md).
+
 ## Search terms
 
-Emerging AI talent · AI engineer discovery · AI researcher discovery · GitHub talent intelligence · open-source talent radar · CUDA engineer discovery · Triton engineer discovery · LLM inference talent · technical talent intelligence · evidence-grounded recruiting research
+Emerging AI talent · AI engineer discovery · AI researcher discovery · GitHub talent intelligence · open-source talent radar · hidden technical talent · CUDA engineer discovery · Triton engineer discovery · LLM inference talent · technical talent intelligence · evidence-grounded talent discovery
 
 ## Limitations
 
