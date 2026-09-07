@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 
 from .models import Candidate, Evidence
@@ -12,8 +13,11 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
     github = GitHubSource(os.getenv("GITHUB_TOKEN"))
     openalex = OpenAlexSource()
     try:
-        github_candidates = await github.discover(query)
-        works = await openalex.works(query)
+        # Independent sources should not wait on each other.
+        github_candidates, works = await asyncio.gather(
+            github.discover(query),
+            openalex.works(query),
+        )
 
         scored = []
         for item in github_candidates:
