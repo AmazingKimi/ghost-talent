@@ -57,7 +57,7 @@ Then open:
 http://127.0.0.1:8765
 ```
 
-A GitHub token is optional but useful because unauthenticated GitHub API requests have a much lower rate limit. Copy `.env.example` to `.env` or export `GITHUB_TOKEN` in your shell before starting the app.
+A GitHub token is optional but useful because unauthenticated GitHub API requests have a much lower rate limit. If you have one, export `GITHUB_TOKEN` in your shell before starting the app.
 
 ## What the first scout does
 
