@@ -59,10 +59,15 @@ function esc(value) {
 }
 
 function evidenceRows(candidate) {
-  return (candidate.evidence || []).slice(0, 5).map(e => {
-    const label = e.type === 'paper'
-      ? `${e.value.title || 'Paper'} · ${e.value.citations ?? 0} citations`
-      : `${e.value.repository || 'Repository'} · ${e.value.contributions ?? 0} contributions`;
+  return (candidate.evidence || []).slice(0, 6).map(e => {
+    let label = 'Evidence';
+    if (e.type === 'paper') {
+      label = `${e.value.title || 'Paper'} · ${e.value.citations ?? 0} citations`;
+    } else if (e.type === 'merged_pull_request') {
+      label = `Merged PR #${e.value.number ?? '?'} · ${e.value.title || 'technical contribution'}`;
+    } else {
+      label = `${e.value.repository || 'Repository'} · ${e.value.contributions ?? 0} contributions`;
+    }
     return `<div><a href="${esc(e.source_url)}" target="_blank" rel="noreferrer">↗ ${esc(label)}</a></div>`;
   }).join('');
 }
@@ -70,15 +75,23 @@ function evidenceRows(candidate) {
 function driverRows(row) {
   const d = row.drivers || {};
   const cap = d.capability || {};
+  const quality = d.contribution_quality || {};
   const mom = d.momentum || {};
   const vis = d.visibility || {};
   const conf = d.confidence || {};
   const top = cap.top_repository;
   const accel = mom.acceleration_ratio ?? 0;
   const accelLabel = accel >= 1.2 ? 'above prior baseline' : accel < 0.8 ? 'below prior baseline' : 'near prior baseline';
+  let qualityLine = '<strong>Contribution quality:</strong> unavailable';
+  if (quality.available && quality.top_pr) {
+    const pr = quality.top_pr;
+    const keywords = (pr.keyword_hits || []).slice(0, 5).join(', ') || 'no core keyword match';
+    qualityLine = `<strong>Contribution quality:</strong> ${quality.score} / 100 · ${quality.merged_pr_count ?? 0} merged PRs · top PR touches ${pr.core_file_count ?? 0} core files · ${esc(keywords)}`;
+  }
   return `
     <div class="why-title">Why this score</div>
-    <div><strong>Capability:</strong> ${top ? `${esc(top.name)} · ${top.contributions ?? 0} contributions · ${top.stars ?? 0} stars` : 'no repository evidence'}</div>
+    <div><strong>Capability:</strong> ${top ? `${esc(top.name)} · ${top.contributions ?? 0} contributions · ${top.stars ?? 0} stars` : 'no repository evidence'} · base ${cap.base_capability ?? 0}</div>
+    <div>${qualityLine}</div>
     <div><strong>Momentum:</strong> ${mom.events_7d ?? 0} events / 7d · ${mom.events_30d ?? 0} / 30d · ${mom.active_days_30d ?? 0} active days · ${esc(accelLabel)}</div>
     <div><strong>Visibility:</strong> ${vis.followers ?? 0} followers</div>
     <div><strong>Confidence:</strong> ${(conf.reasons || []).map(esc).join(' · ') || 'limited evidence'}</div>`;
