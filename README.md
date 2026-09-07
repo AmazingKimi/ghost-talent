@@ -12,7 +12,7 @@ Instead of asking who is already famous, Ghost Talent asks a different question:
 
 Public technical activity can reveal emerging talent before conventional recruiting signals do.
 
-Ghost Talent combines public evidence from sources such as GitHub and research-paper indexes, builds a time-aware technical profile, and ranks candidates using transparent signals rather than an LLM-generated popularity score.
+Ghost Talent combines public evidence from sources such as GitHub and research-paper indexes, builds a time-aware technical profile, and ranks candidates using transparent signals rather than a black-box popularity score.
 
 ## Ghost Score v0.1
 
@@ -23,21 +23,50 @@ The first scoring model is intentionally simple and inspectable:
 - **Visibility Gap — 20%**: whether capability appears ahead of current public visibility
 - **Evidence Confidence — 10%**: how reliable the identity match and supporting evidence are
 
-LLMs may explain evidence, but they do **not** invent evidence and do **not** directly determine the final score.
+Explanations may summarize evidence, but they do not create evidence and do not directly determine the final score.
 
 ## v0.1 scope
 
-The first release will focus on one workflow:
+The first release focuses on one workflow:
 
 `technical topic → scout → identity resolution → evidence → time series → Ghost Score → ranked candidates`
 
-Initial public sources:
+Current public sources:
 
 - GitHub
-- OpenAlex / arXiv
-- a secondary scholarly evidence source
+- OpenAlex
+
+Planned next: arXiv / secondary scholarly evidence, stronger identity resolution, historical backtesting and watchlists.
 
 Not in v0.1: recruiting CRM, automated outreach, private-data enrichment, LinkedIn scraping, payment, or enterprise workflows.
+
+## Run locally
+
+Requires Python 3.11+.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+python -m ghost_talent.app
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8765
+```
+
+A GitHub token is optional but useful because unauthenticated GitHub API requests have a much lower rate limit. Copy `.env.example` to `.env` or export `GITHUB_TOKEN` in your shell before starting the app.
+
+## What the first scout does
+
+1. Searches repositories related to the requested technical topic.
+2. Collects contributors from those repositories.
+3. Reads current public profile and recent public activity signals.
+4. Cross-checks a candidate's public name against relevant OpenAlex works.
+5. Builds evidence records and calculates the four Ghost Score dimensions.
+6. Returns a ranked list with links back to the underlying evidence.
 
 ## Principles
 
@@ -47,6 +76,10 @@ Not in v0.1: recruiting CRM, automated outreach, private-data enrichment, Linked
 4. The system should detect acceleration, not merely popularity.
 5. Historical evaluation must support an `as_of_date` so future information cannot leak into past rankings.
 6. Sensitive personal attributes are outside the ranking model.
+
+## Current limitations
+
+This is an early scoring model. GitHub public events provide only a limited activity window, and OpenAlex identity matching is currently conservative and name-based. Scores should be treated as discovery signals, not employment decisions or predictions of future success.
 
 ## Status
 
