@@ -24,5 +24,6 @@ class Candidate:
     recent_events_90d: int
     active_days_30d: int
     observed_event_span_days: float
+    contribution_quality: dict[str, Any]
     paper_matches: list[dict[str, Any]]
     evidence: list[Evidence]
