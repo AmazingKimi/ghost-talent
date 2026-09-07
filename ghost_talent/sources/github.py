@@ -53,6 +53,43 @@ class GitHubSource:
         item.setdefault("merged_pr_discoveries", [])
         return item
 
+    @staticmethod
+    def _primary_repo(item: dict) -> str:
+        repositories = item.get("repositories", [])
+        if not repositories:
+            return "unknown"
+        return max(
+            repositories,
+            key=lambda repo: (
+                int(repo.get("contributions", 0)),
+                int(repo.get("stars", 0)),
+            ),
+        ).get("name", "unknown")
+
+    @classmethod
+    def _diversify(cls, ranked: list[dict], limit: int, max_per_repo: int) -> list[dict]:
+        selected: list[dict] = []
+        overflow: list[dict] = []
+        repo_counts: dict[str, int] = defaultdict(int)
+
+        for item in ranked:
+            primary = cls._primary_repo(item)
+            if repo_counts[primary] < max_per_repo:
+                selected.append(item)
+                repo_counts[primary] += 1
+            else:
+                overflow.append(item)
+            if len(selected) >= limit:
+                return selected
+
+        # If the query genuinely has too few distinct repositories, fill remaining
+        # slots from the original ranking rather than returning fewer candidates.
+        for item in overflow:
+            selected.append(item)
+            if len(selected) >= limit:
+                break
+        return selected
+
     async def discover(
         self,
         query: str,
@@ -63,7 +100,7 @@ class GitHubSource:
         pr_repo_budget: int = 10,
         pr_limit: int = 20,
     ) -> list[dict]:
-        """Wide Scout with bounded concurrency and a short in-process API cache."""
+        """Wide Scout with bounded concurrency, caching, and repository diversity."""
         search = await self._get(
             f"{API}/search/repositories", q=query, sort="stars", order="desc", per_page=repo_limit,
         )
@@ -130,7 +167,7 @@ class GitHubSource:
                             "stars": repo.get("stargazers_count", 0), "contributions": 0,
                         })
 
-        ranked = sorted(
+        raw_ranked = sorted(
             candidates.values(),
             key=lambda c: (
                 len(c.get("merged_pr_discoveries", [])) > 0,
@@ -138,7 +175,12 @@ class GitHubSource:
                 len(c.get("repositories", [])),
                 sum(r["stars"] for r in c.get("repositories", [])),
             ), reverse=True,
-        )[:candidate_limit]
+        )
+
+        # For a Top 20, no single primary repository should normally occupy more
+        # than four slots. We retain overflow only if diversity is genuinely scarce.
+        max_per_repo = max(2, candidate_limit // 5)
+        ranked = self._diversify(raw_ranked, candidate_limit, max_per_repo)
 
         async def enrich(index: int, item: dict) -> dict:
             profile = None
@@ -157,6 +199,7 @@ class GitHubSource:
                 quality = await self._contribution_quality(item)
             return {
                 **item,
+                "primary_repository": self._primary_repo(item),
                 "name": profile.get("name") if profile else None,
                 "profile_url": profile.get("html_url") if profile else item["profile_url"],
                 "followers": profile.get("followers", 0) if profile else 0,
