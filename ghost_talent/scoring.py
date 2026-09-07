@@ -17,6 +17,39 @@ def _repo_capability(repository: dict) -> float:
     return min(92.0, contribution_signal + quality_signal)
 
 
+def _contribution_quality(candidate: Candidate) -> tuple[float, dict]:
+    quality = candidate.contribution_quality or {}
+    top_pr = quality.get("top_pr") or {}
+    if not quality.get("available") or not top_pr:
+        return 0.0, {
+            "available": False,
+            "score": 0.0,
+            "reason": "merged PR quality evidence unavailable",
+        }
+
+    merged_pr_count = max(int(quality.get("merged_pr_count", 0)), 0)
+    core_file_count = max(int(top_pr.get("core_file_count", 0)), 0)
+    changed_files = max(int(top_pr.get("changed_files_sampled", 0)), 0)
+    keyword_hits = top_pr.get("keyword_hits") or []
+    change_volume = max(int(top_pr.get("additions", 0)), 0) + max(int(top_pr.get("deletions", 0)), 0)
+
+    merged_signal = min(28.0, 12.0 * math.log1p(merged_pr_count))
+    core_ratio = min(core_file_count / max(changed_files, 1), 1.0)
+    core_signal = 34.0 * core_ratio
+    keyword_signal = min(22.0, 5.5 * len(keyword_hits))
+    scope_signal = min(16.0, 4.0 * math.log1p(change_volume))
+    score = _clamp(merged_signal + core_signal + keyword_signal + scope_signal)
+
+    return score, {
+        "available": True,
+        "score": score,
+        "repository": quality.get("repository"),
+        "merged_pr_count": merged_pr_count,
+        "top_pr": top_pr,
+        "core_ratio": round(core_ratio, 2),
+    }
+
+
 def score_candidate(candidate: Candidate) -> dict:
     scored_repositories = [
         {**repo, "capability_signal": round(_repo_capability(repo), 1)}
@@ -27,9 +60,12 @@ def score_candidate(candidate: Candidate) -> dict:
     repo_scores = [repo["capability_signal"] for repo in scored_repositories]
     if repo_scores:
         top = repo_scores[:3]
-        capability = _clamp(sum(top) / len(top) + 4.0 * math.log1p(len(repo_scores)))
+        base_capability = _clamp(sum(top) / len(top) + 4.0 * math.log1p(len(repo_scores)))
     else:
-        capability = 0.0
+        base_capability = 0.0
+
+    contribution_quality, quality_driver = _contribution_quality(candidate)
+    capability = _clamp(base_capability + 0.18 * contribution_quality)
 
     prior_60d = max(candidate.recent_events_90d - candidate.recent_events_30d, 0)
     prior_weekly_rate = prior_60d / 8.57 if prior_60d else 0.0
@@ -68,6 +104,9 @@ def score_candidate(candidate: Candidate) -> dict:
     evidence_confidence += min(12.0, 4.0 * len(candidate.repositories))
     if len(candidate.repositories) > 1:
         confidence_reasons.append(f"evidence across {len(candidate.repositories)} repositories")
+    if quality_driver.get("available"):
+        evidence_confidence += 8.0
+        confidence_reasons.append("merged PR quality evidence")
     if candidate.paper_matches:
         evidence_confidence += 10.0
         evidence_confidence += min(10.0, 5.0 * max(len(candidate.paper_matches) - 1, 0))
@@ -91,9 +130,12 @@ def score_candidate(candidate: Candidate) -> dict:
     drivers = {
         "capability": {
             "repository_count": len(candidate.repositories),
+            "base_capability": base_capability,
+            "contribution_quality": contribution_quality,
             "top_repository": top_repository,
             "top_repositories": scored_repositories[:3],
         },
+        "contribution_quality": quality_driver,
         "momentum": {
             "events_7d": candidate.recent_events_7d,
             "events_30d": candidate.recent_events_30d,
@@ -115,7 +157,7 @@ def score_candidate(candidate: Candidate) -> dict:
     }
 
     return {
-        "score_version": "0.1.2",
+        "score_version": "0.1.3",
         "ghost_score": ghost_score,
         "capability": capability,
         "momentum": momentum,
