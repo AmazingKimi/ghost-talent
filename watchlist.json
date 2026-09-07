@@ -1,0 +1,9 @@
+{
+  "queries": [
+    {
+      "query": "LLM inference CUDA Triton",
+      "limit": 20,
+      "enabled": true
+    }
+  ]
+}
