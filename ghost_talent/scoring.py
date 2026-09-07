@@ -11,7 +11,6 @@ def _clamp(value: float) -> float:
 def _repo_capability(repository: dict) -> float:
     contributions = max(int(repository.get("contributions", 0)), 0)
     stars = max(int(repository.get("stars", 0)), 0)
-
     contribution_signal = 8.0 * math.log1p(min(contributions, 250))
     quality_signal = 4.0 * math.log1p(stars)
     return min(92.0, contribution_signal + quality_signal)
@@ -21,11 +20,7 @@ def _contribution_quality(candidate: Candidate) -> tuple[float, dict]:
     quality = candidate.contribution_quality or {}
     top_pr = quality.get("top_pr") or {}
     if not quality.get("available") or not top_pr:
-        return 0.0, {
-            "available": False,
-            "score": 0.0,
-            "reason": "merged PR quality evidence unavailable",
-        }
+        return 0.0, {"available": False, "score": 0.0, "reason": "merged PR quality evidence unavailable"}
 
     merged_pr_count = max(int(quality.get("merged_pr_count", 0)), 0)
     core_file_count = max(int(top_pr.get("core_file_count", 0)), 0)
@@ -39,7 +34,6 @@ def _contribution_quality(candidate: Candidate) -> tuple[float, dict]:
     keyword_signal = min(22.0, 5.5 * len(keyword_hits))
     scope_signal = min(16.0, 4.0 * math.log1p(change_volume))
     score = _clamp(merged_signal + core_signal + keyword_signal + scope_signal)
-
     return score, {
         "available": True,
         "score": score,
@@ -56,7 +50,6 @@ def score_candidate(candidate: Candidate) -> dict:
         for repo in candidate.repositories
     ]
     scored_repositories.sort(key=lambda repo: repo["capability_signal"], reverse=True)
-
     repo_scores = [repo["capability_signal"] for repo in scored_repositories]
     if repo_scores:
         top = repo_scores[:3]
@@ -70,7 +63,6 @@ def score_candidate(candidate: Candidate) -> dict:
     prior_60d = max(candidate.recent_events_90d - candidate.recent_events_30d, 0)
     prior_weekly_rate = prior_60d / 8.57 if prior_60d else 0.0
     current_weekly_rate = float(candidate.recent_events_7d)
-
     if prior_weekly_rate > 0:
         short_acceleration = current_weekly_rate / prior_weekly_rate
     elif current_weekly_rate > 0:
@@ -82,16 +74,11 @@ def score_candidate(candidate: Candidate) -> dict:
     recency_density = 0.0
     if candidate.observed_event_span_days > 0:
         recency_density = min(30.0 / candidate.observed_event_span_days, 2.0) / 2.0
-
     if candidate.recent_events_30d == 0:
         momentum = 0.0
     else:
         acceleration_score = 50.0 + 24.0 * math.log2(max(short_acceleration, 0.25))
-        momentum = _clamp(
-            0.65 * _clamp(acceleration_score)
-            + 20.0 * active_day_ratio
-            + 15.0 * recency_density
-        )
+        momentum = _clamp(0.65 * _clamp(acceleration_score) + 20.0 * active_day_ratio + 15.0 * recency_density)
 
     visibility = _clamp(18.0 * math.log1p(max(candidate.followers, 0)))
     visibility_gap = _clamp(50.0 + 0.6 * (capability - visibility))
@@ -113,18 +100,26 @@ def score_candidate(candidate: Candidate) -> dict:
         confidence_reasons.append(f"{len(candidate.paper_matches)} OpenAlex name match(es)")
     evidence_confidence = _clamp(evidence_confidence)
 
-    ghost_score = _clamp(
-        0.35 * capability
-        + 0.35 * momentum
-        + 0.20 * visibility_gap
-        + 0.10 * evidence_confidence
-    )
-
+    ghost_score = _clamp(0.35 * capability + 0.35 * momentum + 0.20 * visibility_gap + 0.10 * evidence_confidence)
     trend = "stable"
     if momentum >= 65:
         trend = "accelerating"
     elif momentum < 38:
         trend = "decelerating"
+
+    # Breakout Radar is deliberately evidence-gated. High activity alone is not enough.
+    radar_score = _clamp(
+        0.35 * momentum
+        + 0.30 * contribution_quality
+        + 0.25 * visibility_gap
+        + 0.10 * evidence_confidence
+    )
+    early_signal = bool(
+        quality_driver.get("available")
+        and radar_score >= 65
+        and momentum >= 60
+        and visibility_gap >= 45
+    )
 
     top_repository = scored_repositories[0] if scored_repositories else None
     drivers = {
@@ -146,24 +141,30 @@ def score_candidate(candidate: Candidate) -> dict:
             "acceleration_ratio": round(short_acceleration, 2),
             "observed_event_span_days": candidate.observed_event_span_days,
         },
-        "visibility": {
-            "followers": candidate.followers,
-            "visibility_score": visibility,
-        },
-        "confidence": {
-            "paper_matches": len(candidate.paper_matches),
-            "reasons": confidence_reasons,
+        "visibility": {"followers": candidate.followers, "visibility_score": visibility},
+        "confidence": {"paper_matches": len(candidate.paper_matches), "reasons": confidence_reasons},
+        "radar": {
+            "score": radar_score,
+            "early_signal": early_signal,
+            "requirements": {
+                "quality_evidence": bool(quality_driver.get("available")),
+                "momentum_at_least_60": momentum >= 60,
+                "visibility_gap_at_least_45": visibility_gap >= 45,
+                "radar_score_at_least_65": radar_score >= 65,
+            },
         },
     }
 
     return {
-        "score_version": "0.1.3",
+        "score_version": "0.1.4",
         "ghost_score": ghost_score,
         "capability": capability,
         "momentum": momentum,
         "visibility_gap": visibility_gap,
         "evidence_confidence": evidence_confidence,
         "trend": trend,
+        "radar_score": radar_score,
+        "early_signal": early_signal,
         "drivers": drivers,
         "candidate": asdict(candidate),
     }
