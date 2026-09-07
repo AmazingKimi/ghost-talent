@@ -9,20 +9,38 @@ from .sources.github import GitHubSource
 from .sources.openalex import OpenAlexSource
 
 
-async def scout(query: str, limit: int = 20) -> list[dict]:
+def _source_status(result) -> dict:
+    if not isinstance(result, Exception):
+        return {"status": "ok"}
+
+    message = str(result).lower()
+    if "rate limit" in message or "429" in message or "403" in message:
+        return {"status": "rate_limited", "detail": str(result)}
+    return {"status": "unavailable", "detail": str(result)}
+
+
+async def scout(query: str, limit: int = 20) -> dict:
     github = GitHubSource(os.getenv("GITHUB_TOKEN"))
     openalex = OpenAlexSource()
     try:
-        # Independent sources should not wait on each other.
-        github_candidates, works = await asyncio.gather(
+        github_result, openalex_result = await asyncio.gather(
             github.discover(query),
             openalex.works(query),
+            return_exceptions=True,
         )
+
+        sources = {
+            "github": _source_status(github_result),
+            "openalex": _source_status(openalex_result),
+        }
+
+        github_candidates = [] if isinstance(github_result, Exception) else github_result
+        works = [] if isinstance(openalex_result, Exception) else openalex_result
 
         scored = []
         for item in github_candidates:
             subject_id = f"github:{item['login'].lower()}"
-            paper_matches = openalex.match_author(item.get("name"), works)
+            paper_matches = [] if isinstance(openalex_result, Exception) else openalex.match_author(item.get("name"), works)
             evidence = []
 
             for repo in item["repositories"]:
@@ -98,7 +116,13 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
             scored.append(score_candidate(candidate))
 
         scored.sort(key=lambda row: row["ghost_score"], reverse=True)
-        return scored[:limit]
+
+        if sources["github"]["status"] == "ok" and not scored:
+            sources["github"] = {"status": "ok", "detail": "No candidates matched this query."}
+        if sources["openalex"]["status"] == "ok" and not works:
+            sources["openalex"] = {"status": "ok", "detail": "No research works matched this query."}
+
+        return {"results": scored[:limit], "sources": sources}
     finally:
         await github.close()
         await openalex.close()
