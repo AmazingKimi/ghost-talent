@@ -101,7 +101,7 @@ class GitHubSource:
    return {**row,"core_path_signal":bool(core_files),"core_path_evidence":"changed_files","core_files":core_files[:6],"changed_files_sampled":len(names),"maintainer_accepted":bool(approvals),"maintainer_acceptance_evidence":"approved_review" if approvals else "reviews_inspected_no_maintainer_approval","maintainer_approvals":approvals[:3]}
   verified=await asyncio.gather(*(verify(row) for row in inspect)) if inspect else []
   by_key={(r["repository"],r["number"]):r for r in verified};rows=[by_key.get((r["repository"],r["number"]),r) for r in rows]
-  recognized=sum(1 for x in rows if x["recognized_upstream"]);core=sum(1 for x in rows if x["core_path_signal"] and x.get("core_path_evidence")=="changed_files");accepted=sum(1 for x in rows if x.get("maintainer_accepted") and x.get("maintainer_acceptance_evidence")=="approved_review");return {"available":True,"external_merged_prs":len(rows),"recognized_upstream_prs":recognized,"core_path_prs":core,"core_path_prs_inspected":len(verified),"maintainer_accepted_prs":accepted,"maintainer_review_prs_inspected":len(verified),"prs":rows[:8]}
+  recognized=sum(1 for x in rows if x["recognized_upstream"]);core=sum(1 for x in rows if x["core_path_signal"] and x.get("core_path_evidence")=="changed_files");accepted=sum(1 for x in rows if x.get("maintainer_accepted") and x.get("maintainer_acceptance_evidence")=="approved_review");accepted_core=sum(1 for x in rows if x.get("core_path_signal") and x.get("core_path_evidence")=="changed_files" and x.get("maintainer_accepted") and x.get("maintainer_acceptance_evidence")=="approved_review");return {"available":True,"external_merged_prs":len(rows),"recognized_upstream_prs":recognized,"core_path_prs":core,"core_path_prs_inspected":len(verified),"maintainer_accepted_prs":accepted,"maintainer_review_prs_inspected":len(verified),"maintainer_accepted_core_path_prs":accepted_core,"prs":rows[:8]}
  async def _contribution_quality(self,item):
   repos=sorted(item.get("repositories",[]),key=lambda r:int(r.get("contributions",0)),reverse=True)
   if not repos:return self._empty_quality()
@@ -120,7 +120,7 @@ class GitHubSource:
  @staticmethod
  def _empty_quality(repository=None):return {"available":False,"repository":repository,"merged_pr_count":0,"sampled_pr_count":0,"top_pr":None}
  @staticmethod
- def _empty_external():return {"available":False,"external_merged_prs":0,"recognized_upstream_prs":0,"core_path_prs":0,"core_path_prs_inspected":0,"maintainer_accepted_prs":0,"maintainer_review_prs_inspected":0,"prs":[]}
+ def _empty_external():return {"available":False,"external_merged_prs":0,"recognized_upstream_prs":0,"core_path_prs":0,"core_path_prs_inspected":0,"maintainer_accepted_prs":0,"maintainer_review_prs_inspected":0,"maintainer_accepted_core_path_prs":0,"prs":[]}
  @staticmethod
  def _event_counts(events):
   now=datetime.now(timezone.utc);d7=now-timedelta(days=7);d30=now-timedelta(days=30);d90=now-timedelta(days=90);c7=c30=c90=0;days=set();ts=[]
