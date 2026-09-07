@@ -4,6 +4,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 
+from .dossier import build_dossier
 from .scout import scout
 from .snapshot import save_snapshot
 
@@ -36,6 +37,7 @@ async def run_scout(q: str = Query(min_length=2, max_length=120), limit: int = 2
                 "d7": {"status": "building_history", "days": 7},
                 "d30": {"status": "building_history", "days": 30},
             })
+            row["dossier"] = build_dossier(row)
         return {"query": q, "count": len(results), "results": results, "sources": sources, "snapshot": snapshot}
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Scout failed: {exc}") from exc
