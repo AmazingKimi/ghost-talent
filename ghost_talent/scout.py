@@ -82,6 +82,7 @@ async def scout(query: str, limit: int = 20) -> dict:
                 )
 
             for paper in paper_matches:
+                identity_confidence = float(paper.get("identity_confidence", 0.35))
                 evidence.append(
                     Evidence(
                         type="paper",
@@ -93,8 +94,10 @@ async def scout(query: str, limit: int = 20) -> dict:
                             "title": paper["title"],
                             "citations": paper["cited_by_count"],
                             "author": paper["author"],
+                            "openalex_author_id": paper.get("openalex_author_id"),
+                            "identity_status": paper.get("identity_status", "uncertain_name_match"),
                         },
-                        confidence=0.8,
+                        confidence=identity_confidence,
                     )
                 )
 
