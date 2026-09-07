@@ -8,7 +8,8 @@ from pathlib import Path
 from typing import Any
 
 
-SNAPSHOT_SCHEMA_VERSION = "0.1"
+SNAPSHOT_SCHEMA_VERSION = "0.2"
+LEDGER_SCHEMA_VERSION = "0.1"
 
 
 def _slugify(value: str) -> str:
@@ -16,12 +17,67 @@ def _slugify(value: str) -> str:
     return slug[:64] or "query"
 
 
-def save_snapshot(root: Path, query: str, results: list[dict[str, Any]]) -> dict[str, str]:
+def _person_key(login: str) -> str:
+    return _slugify(login)[:80]
+
+
+def _record_first_detected(
+    root: Path,
+    observed_at: str,
+    query: str,
+    snapshot_id: str,
+    results: list[dict[str, Any]],
+) -> dict[str, str]:
+    directory = root / "ledger" / "people"
+    directory.mkdir(parents=True, exist_ok=True)
+    first_detected: dict[str, str] = {}
+
+    for rank, row in enumerate(results, start=1):
+        candidate = row.get("candidate", {})
+        login = str(candidate.get("login") or "").strip()
+        if not login:
+            continue
+
+        path = directory / f"{_person_key(login)}.json"
+        payload = {
+            "schema_version": LEDGER_SCHEMA_VERSION,
+            "login": login,
+            "name": candidate.get("name"),
+            "profile_url": candidate.get("profile_url"),
+            "first_detected_at": observed_at,
+            "first_query": query,
+            "first_snapshot_id": snapshot_id,
+            "first_rank": rank,
+            "first_score_version": row.get("score_version"),
+            "first_scores": {
+                "ghost_score": row.get("ghost_score"),
+                "capability": row.get("capability"),
+                "momentum": row.get("momentum"),
+                "visibility_gap": row.get("visibility_gap"),
+                "evidence_confidence": row.get("evidence_confidence"),
+            },
+        }
+
+        try:
+            with path.open("x", encoding="utf-8") as handle:
+                json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
+                handle.write("\n")
+            first_detected[login] = observed_at
+        except FileExistsError:
+            existing = json.loads(path.read_text(encoding="utf-8"))
+            first_detected[login] = str(existing.get("first_detected_at") or observed_at)
+
+    return first_detected
+
+
+def save_snapshot(root: Path, query: str, results: list[dict[str, Any]]) -> dict[str, Any]:
     observed = datetime.now(timezone.utc)
     observed_at = observed.isoformat().replace("+00:00", "Z")
     query_slug = _slugify(query)
     fingerprint = hashlib.sha256(f"{query}|{observed_at}".encode("utf-8")).hexdigest()[:8]
     snapshot_id = f"{observed.strftime('%Y%m%dT%H%M%S%fZ')}-{fingerprint}"
+
+    first_detected = _record_first_detected(root, observed_at, query, snapshot_id, results)
 
     directory = root / "snapshots" / observed.strftime("%Y-%m-%d") / query_slug
     directory.mkdir(parents=True, exist_ok=True)
@@ -40,6 +96,7 @@ def save_snapshot(root: Path, query: str, results: list[dict[str, Any]]) -> dict
                 "rank": index,
                 "login": row.get("candidate", {}).get("login"),
                 "name": row.get("candidate", {}).get("name"),
+                "first_detected_at": first_detected.get(str(row.get("candidate", {}).get("login") or "")),
                 "ghost_score": row.get("ghost_score"),
                 "capability": row.get("capability"),
                 "momentum": row.get("momentum"),
@@ -63,4 +120,5 @@ def save_snapshot(root: Path, query: str, results: list[dict[str, Any]]) -> dict
         "snapshot_id": snapshot_id,
         "observed_at": observed_at,
         "path": str(path.relative_to(root)),
+        "first_detected": first_detected,
     }
