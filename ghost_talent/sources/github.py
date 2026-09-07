@@ -30,7 +30,15 @@ class GitHubSource:
         response.raise_for_status()
         return response.json()
 
-    async def discover(self, query: str, repo_limit: int = 5, candidate_limit: int = 8) -> list[dict]:
+    async def discover(
+        self,
+        query: str,
+        repo_limit: int = 15,
+        candidate_limit: int = 20,
+        contributor_limit: int = 25,
+        quality_budget: int = 12,
+    ) -> list[dict]:
+        """Build a wider candidate pool, then spend expensive API calls only on finalists."""
         search = await self._get(
             f"{API}/search/repositories",
             q=query,
@@ -42,7 +50,7 @@ class GitHubSource:
         candidates: dict[str, dict] = defaultdict(lambda: {"repositories": []})
         for repo in search.get("items", []):
             try:
-                contributors = await self._get(repo["contributors_url"], per_page=15)
+                contributors = await self._get(repo["contributors_url"], per_page=contributor_limit)
             except httpx.HTTPStatusError as exc:
                 if exc.response.status_code in {403, 429}:
                     break
@@ -65,13 +73,17 @@ class GitHubSource:
 
         ranked = sorted(
             candidates.values(),
-            key=lambda c: sum(r["contributions"] for r in c["repositories"]),
+            key=lambda c: (
+                sum(r["contributions"] for r in c["repositories"]),
+                len(c["repositories"]),
+                sum(r["stars"] for r in c["repositories"]),
+            ),
             reverse=True,
         )[:candidate_limit]
 
         enriched = []
         rate_limited = False
-        for item in ranked:
+        for index, item in enumerate(ranked):
             profile = None
             events: list[dict] = []
 
@@ -86,7 +98,10 @@ class GitHubSource:
                         raise
 
             counts = self._event_counts(events)
-            quality = await self._contribution_quality(item) if self.authenticated and not rate_limited else self._empty_quality()
+            quality = self._empty_quality()
+            if self.authenticated and not rate_limited and index < quality_budget:
+                quality = await self._contribution_quality(item)
+
             enriched.append(
                 {
                     **item,
