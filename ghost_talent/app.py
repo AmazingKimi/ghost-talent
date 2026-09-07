@@ -16,6 +16,12 @@ async def index():
     return FileResponse(ROOT / "web" / "index.html")
 
 
+@app.get("/favicon.ico", include_in_schema=False)
+@app.get("/favicon.svg", include_in_schema=False)
+async def favicon():
+    return FileResponse(ROOT / "web" / "favicon.svg", media_type="image/svg+xml")
+
+
 @app.get("/api/scout")
 async def run_scout(q: str = Query(min_length=2, max_length=120), limit: int = 20):
     try:
