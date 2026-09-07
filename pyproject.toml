@@ -1,0 +1,20 @@
+[project]
+name = "ghost-talent"
+version = "0.1.0"
+description = "Evidence-grounded discovery for emerging AI engineers and researchers"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.116,<1",
+  "uvicorn[standard]>=0.35,<1",
+  "httpx>=0.28,<1",
+]
+
+[project.scripts]
+ghost-talent = "ghost_talent.app:main"
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ghost_talent*"]
