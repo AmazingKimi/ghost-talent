@@ -13,14 +13,17 @@ def score_candidate(c:Candidate)->dict:
  if concentration:confidence-=18
  if not noise_clear:confidence-=15
  confidence=_clamp(confidence);ghost=_clamp(.30*capability+.25*external+.25*momentum+.10*gap+.10*confidence);radar=_clamp(.35*external+.25*momentum+.20*gap+.15*capability+.05*confidence)
+ already_visible=bool(external>=60 and c.followers>=500);emerging_visibility=bool(c.followers<500)
  if not noise_clear or confidence<40:status="LOW CONFIDENCE"
- elif radar>=75 and external>=70 and confidence>=65:status="STRONG SIGNAL"
- elif radar>=65 and external>=50 and confidence>=55:status="EARLY SIGNAL"
+ elif already_visible:status="PROVEN / ALREADY VISIBLE"
+ elif radar>=75 and external>=70 and confidence>=65 and emerging_visibility:status="STRONG SIGNAL"
+ elif radar>=65 and external>=50 and confidence>=55 and emerging_visibility:status="EARLY SIGNAL"
  elif radar>=50 or internal>=55:status="WATCH"
  else:status="DISCOVERED"
- early=status in {"STRONG SIGNAL","EARLY SIGNAL"};reasons=[]
+ early=status in {"STRONG SIGNAL","EARLY SIGNAL"};priority={"STRONG SIGNAL":5,"EARLY SIGNAL":4,"WATCH":3,"DISCOVERED":2,"PROVEN / ALREADY VISIBLE":1,"LOW CONFIDENCE":0}[status];reasons=[]
  if external_count:reasons.append(f"{external_count} external merged PR(s)")
  if ext.get("recognized_upstream_prs"):reasons.append(f"{ext['recognized_upstream_prs']} recognized upstream PR(s)")
  if ext.get("core_path_prs"):reasons.append(f"{ext['core_path_prs']} core-path external PR signal(s)")
  if concentration:reasons.append("evidence concentration risk: >80% self/discovery-repo activity with no external merged PR")
- return {"score_version":"0.2.0","ghost_score":ghost,"radar_score":radar,"capability":capability,"internal_capability":internal,"external_validation":external,"momentum":momentum,"visibility_gap":gap,"evidence_confidence":confidence,"recommendation_status":status,"early_signal":early,"trend":"accelerating" if momentum>=65 else "decelerating" if momentum<38 else "stable","evidence_mix":mix,"drivers":{"capability":{"internal":internal,"external":external,"top_repositories":repos[:3]},"external_validation":{**ext,"score":external,"reasons":reasons},"evidence_mix":mix,"momentum":{"events_7d":c.recent_events_7d,"events_30d":c.recent_events_30d,"events_90d":c.recent_events_90d,"active_days_30d":c.active_days_30d,"acceleration_ratio":round(acc,2)},"visibility":{"followers":c.followers,"visibility_score":visibility},"confidence":{"score":confidence,"evidence_concentration_risk":concentration},"data_trust":{"noise_status":(c.noise or {}).get("status","clear")},"radar":{"score":radar,"recommendation_status":status,"requirements":{"external_validation":external,"noise_clear":noise_clear}}},"candidate":asdict(c)}
+ if already_visible:reasons.append(f"already visible: {c.followers} GitHub followers with strong external validation")
+ return {"score_version":"0.2.1","ghost_score":ghost,"radar_score":radar,"capability":capability,"internal_capability":internal,"external_validation":external,"momentum":momentum,"visibility_gap":gap,"evidence_confidence":confidence,"recommendation_status":status,"discovery_priority":priority,"early_signal":early,"trend":"accelerating" if momentum>=65 else "decelerating" if momentum<38 else "stable","evidence_mix":mix,"drivers":{"capability":{"internal":internal,"external":external,"top_repositories":repos[:3]},"external_validation":{**ext,"score":external,"reasons":reasons},"evidence_mix":mix,"momentum":{"events_7d":c.recent_events_7d,"events_30d":c.recent_events_30d,"events_90d":c.recent_events_90d,"active_days_30d":c.active_days_30d,"acceleration_ratio":round(acc,2)},"visibility":{"followers":c.followers,"visibility_score":visibility,"emerging_visibility":emerging_visibility,"already_visible":already_visible},"confidence":{"score":confidence,"evidence_concentration_risk":concentration},"data_trust":{"noise_status":(c.noise or {}).get("status","clear")},"radar":{"score":radar,"recommendation_status":status,"requirements":{"external_validation":external,"noise_clear":noise_clear,"emerging_visibility":emerging_visibility}}},"candidate":asdict(c)}
