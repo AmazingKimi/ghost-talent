@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Any
 
-
 @dataclass
 class Evidence:
     type: str
@@ -11,7 +10,6 @@ class Evidence:
     observed_at: str | None = None
     value: dict[str, Any] = field(default_factory=dict)
     confidence: float = 1.0
-
 
 @dataclass
 class Candidate:
@@ -28,3 +26,4 @@ class Candidate:
     contribution_quality: dict[str, Any]
     paper_matches: list[dict[str, Any]]
     evidence: list[Evidence]
+    noise: dict[str, Any] = field(default_factory=dict)
