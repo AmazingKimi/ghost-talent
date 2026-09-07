@@ -73,19 +73,41 @@ class GitHubSource:
         return enriched
 
     @staticmethod
-    def _event_counts(events: list[dict]) -> dict[str, int]:
+    def _event_counts(events: list[dict]) -> dict[str, int | float]:
         now = datetime.now(timezone.utc)
+        d7 = now - timedelta(days=7)
         d30 = now - timedelta(days=30)
         d90 = now - timedelta(days=90)
+        count_7 = 0
         count_30 = 0
         count_90 = 0
+        active_days_30: set[str] = set()
+        timestamps: list[datetime] = []
+
         for event in events:
             created = event.get("created_at")
             if not created:
                 continue
             ts = datetime.fromisoformat(created.replace("Z", "+00:00"))
+            timestamps.append(ts)
             if ts >= d90:
                 count_90 += 1
             if ts >= d30:
                 count_30 += 1
-        return {"recent_events_30d": count_30, "recent_events_90d": count_90}
+                active_days_30.add(ts.date().isoformat())
+            if ts >= d7:
+                count_7 += 1
+
+        span_days = 0.0
+        if len(timestamps) >= 2:
+            newest = max(timestamps)
+            oldest = min(timestamps)
+            span_days = max((newest - oldest).total_seconds() / 86400.0, 0.0)
+
+        return {
+            "recent_events_7d": count_7,
+            "recent_events_30d": count_30,
+            "recent_events_90d": count_90,
+            "active_days_30d": len(active_days_30),
+            "observed_event_span_days": round(span_days, 2),
+        }
