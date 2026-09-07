@@ -56,8 +56,11 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
                 profile_url=item["profile_url"],
                 followers=item["followers"],
                 repositories=item["repositories"],
+                recent_events_7d=item["recent_events_7d"],
                 recent_events_30d=item["recent_events_30d"],
                 recent_events_90d=item["recent_events_90d"],
+                active_days_30d=item["active_days_30d"],
+                observed_event_span_days=item["observed_event_span_days"],
                 paper_matches=paper_matches,
                 evidence=evidence,
             )
