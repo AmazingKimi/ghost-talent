@@ -34,6 +34,28 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
                     )
                 )
 
+            quality = item.get("contribution_quality") or {}
+            top_pr = quality.get("top_pr") or {}
+            if quality.get("available") and top_pr.get("url"):
+                evidence.append(
+                    Evidence(
+                        type="merged_pull_request",
+                        source="github",
+                        source_url=top_pr["url"],
+                        observed_at=top_pr.get("merged_or_closed_at"),
+                        value={
+                            "repository": quality.get("repository"),
+                            "number": top_pr.get("number"),
+                            "title": top_pr.get("title"),
+                            "core_file_count": top_pr.get("core_file_count", 0),
+                            "core_files": top_pr.get("core_files", []),
+                            "keyword_hits": top_pr.get("keyword_hits", []),
+                            "additions": top_pr.get("additions", 0),
+                            "deletions": top_pr.get("deletions", 0),
+                        },
+                    )
+                )
+
             for paper in paper_matches:
                 evidence.append(
                     Evidence(
@@ -61,6 +83,7 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
                 recent_events_90d=item["recent_events_90d"],
                 active_days_30d=item["active_days_30d"],
                 observed_event_span_days=item["observed_event_span_days"],
+                contribution_quality=quality,
                 paper_matches=paper_matches,
                 evidence=evidence,
             )
