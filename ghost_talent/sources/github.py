@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -74,7 +74,7 @@ class GitHubSource:
 
     @staticmethod
     def _event_counts(events: list[dict]) -> dict[str, int]:
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         d30 = now - timedelta(days=30)
         d90 = now - timedelta(days=90)
         count_30 = 0
