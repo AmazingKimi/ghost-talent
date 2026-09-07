@@ -30,6 +30,16 @@ class GitHubSource:
         response.raise_for_status()
         return response.json()
 
+    @staticmethod
+    def _candidate(candidates: dict[str, dict], login: str, profile_url: str | None = None) -> dict:
+        item = candidates[login]
+        item["login"] = login
+        item["profile_url"] = profile_url or item.get("profile_url") or f"https://github.com/{login}"
+        item.setdefault("repositories", [])
+        item.setdefault("discovery_sources", [])
+        item.setdefault("merged_pr_discoveries", [])
+        return item
+
     async def discover(
         self,
         query: str,
@@ -37,8 +47,10 @@ class GitHubSource:
         candidate_limit: int = 20,
         contributor_limit: int = 25,
         quality_budget: int = 12,
+        pr_repo_budget: int = 10,
+        pr_limit: int = 20,
     ) -> list[dict]:
-        """Build a wider candidate pool, then spend expensive API calls only on finalists."""
+        """Wide Scout: contributors plus recent merged PR authors, then enrich finalists."""
         search = await self._get(
             f"{API}/search/repositories",
             q=query,
@@ -47,12 +59,16 @@ class GitHubSource:
             per_page=repo_limit,
         )
 
-        candidates: dict[str, dict] = defaultdict(lambda: {"repositories": []})
-        for repo in search.get("items", []):
+        candidates: dict[str, dict] = defaultdict(dict)
+        repositories = search.get("items", [])
+        rate_limited = False
+
+        for repo in repositories:
             try:
                 contributors = await self._get(repo["contributors_url"], per_page=contributor_limit)
             except httpx.HTTPStatusError as exc:
                 if exc.response.status_code in {403, 429}:
+                    rate_limited = True
                     break
                 raise
 
@@ -60,9 +76,10 @@ class GitHubSource:
                 if contributor.get("type") != "User":
                     continue
                 login = contributor["login"]
-                candidates[login]["login"] = login
-                candidates[login]["profile_url"] = contributor.get("html_url") or f"https://github.com/{login}"
-                candidates[login]["repositories"].append(
+                item = self._candidate(candidates, login, contributor.get("html_url"))
+                if "contributors" not in item["discovery_sources"]:
+                    item["discovery_sources"].append("contributors")
+                item["repositories"].append(
                     {
                         "name": repo["full_name"],
                         "url": repo["html_url"],
@@ -71,35 +88,88 @@ class GitHubSource:
                     }
                 )
 
+        # A second discovery path catches people whose strongest public signal is a
+        # recently merged PR rather than a high lifetime contributor count.
+        if self.authenticated and not rate_limited:
+            for repo in repositories[:pr_repo_budget]:
+                try:
+                    pulls = await self._get(
+                        f"{API}/repos/{repo['full_name']}/pulls",
+                        state="closed",
+                        sort="updated",
+                        direction="desc",
+                        per_page=pr_limit,
+                    )
+                except httpx.HTTPStatusError as exc:
+                    if exc.response.status_code in {403, 404, 429}:
+                        if exc.response.status_code in {403, 429}:
+                            rate_limited = True
+                            break
+                        continue
+                    raise
+
+                for pull in pulls:
+                    if not pull.get("merged_at"):
+                        continue
+                    user = pull.get("user") or {}
+                    login = user.get("login")
+                    if not login or user.get("type") == "Bot" or login.endswith("[bot]"):
+                        continue
+                    item = self._candidate(candidates, login, user.get("html_url"))
+                    if "merged_pr_author" not in item["discovery_sources"]:
+                        item["discovery_sources"].append("merged_pr_author")
+                    item["merged_pr_discoveries"].append(
+                        {
+                            "repository": repo["full_name"],
+                            "repository_url": repo["html_url"],
+                            "repository_stars": repo.get("stargazers_count", 0),
+                            "number": pull.get("number"),
+                            "title": pull.get("title"),
+                            "url": pull.get("html_url"),
+                            "merged_at": pull.get("merged_at"),
+                        }
+                    )
+                    # Ensure PR-only candidates still carry repository context.
+                    if not any(r["name"] == repo["full_name"] for r in item["repositories"]):
+                        item["repositories"].append(
+                            {
+                                "name": repo["full_name"],
+                                "url": repo["html_url"],
+                                "stars": repo.get("stargazers_count", 0),
+                                "contributions": 0,
+                            }
+                        )
+
         ranked = sorted(
             candidates.values(),
             key=lambda c: (
-                sum(r["contributions"] for r in c["repositories"]),
-                len(c["repositories"]),
-                sum(r["stars"] for r in c["repositories"]),
+                len(c.get("merged_pr_discoveries", [])) > 0,
+                sum(r["contributions"] for r in c.get("repositories", [])),
+                len(c.get("repositories", [])),
+                sum(r["stars"] for r in c.get("repositories", [])),
             ),
             reverse=True,
         )[:candidate_limit]
 
         enriched = []
-        rate_limited = False
+        enrichment_rate_limited = rate_limited
         for index, item in enumerate(ranked):
             profile = None
             events: list[dict] = []
 
-            if not rate_limited:
+            if not enrichment_rate_limited:
                 try:
                     profile = await self._get(f"{API}/users/{item['login']}")
                     events = await self._get(f"{API}/users/{item['login']}/events/public", per_page=100)
                 except httpx.HTTPStatusError as exc:
                     if exc.response.status_code in {403, 429}:
-                        rate_limited = True
+                        enrichment_rate_limited = True
                     else:
                         raise
 
             counts = self._event_counts(events)
             quality = self._empty_quality()
-            if self.authenticated and not rate_limited and index < quality_budget:
+            if self.authenticated and not enrichment_rate_limited and index < quality_budget:
                 quality = await self._contribution_quality(item)
 
             enriched.append(
