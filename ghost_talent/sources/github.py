@@ -24,7 +24,7 @@ class GitHubSource:
         response.raise_for_status()
         return response.json()
 
-    async def discover(self, query: str, repo_limit: int = 8, candidate_limit: int = 30) -> list[dict]:
+    async def discover(self, query: str, repo_limit: int = 5, candidate_limit: int = 8) -> list[dict]:
         search = await self._get(
             f"{API}/search/repositories",
             q=query,
@@ -35,12 +35,19 @@ class GitHubSource:
 
         candidates: dict[str, dict] = defaultdict(lambda: {"repositories": []})
         for repo in search.get("items", []):
-            contributors = await self._get(repo["contributors_url"], per_page=20)
+            try:
+                contributors = await self._get(repo["contributors_url"], per_page=15)
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code in {403, 429}:
+                    break
+                raise
+
             for contributor in contributors:
                 if contributor.get("type") != "User":
                     continue
                 login = contributor["login"]
                 candidates[login]["login"] = login
+                candidates[login]["profile_url"] = contributor.get("html_url") or f"https://github.com/{login}"
                 candidates[login]["repositories"].append(
                     {
                         "name": repo["full_name"],
@@ -57,16 +64,29 @@ class GitHubSource:
         )[:candidate_limit]
 
         enriched = []
+        rate_limited = False
         for item in ranked:
-            profile = await self._get(f"{API}/users/{item['login']}")
-            events = await self._get(f"{API}/users/{item['login']}/events/public", per_page=100)
+            profile = None
+            events: list[dict] = []
+
+            if not rate_limited:
+                try:
+                    profile = await self._get(f"{API}/users/{item['login']}")
+                    events = await self._get(f"{API}/users/{item['login']}/events/public", per_page=100)
+                except httpx.HTTPStatusError as exc:
+                    if exc.response.status_code in {403, 429}:
+                        rate_limited = True
+                    else:
+                        raise
+
             counts = self._event_counts(events)
             enriched.append(
                 {
                     **item,
-                    "name": profile.get("name"),
-                    "profile_url": profile["html_url"],
-                    "followers": profile.get("followers", 0),
+                    "name": profile.get("name") if profile else None,
+                    "profile_url": profile.get("html_url") if profile else item["profile_url"],
+                    "followers": profile.get("followers", 0) if profile else 0,
+                    "github_enrichment_complete": profile is not None,
                     **counts,
                 }
             )
