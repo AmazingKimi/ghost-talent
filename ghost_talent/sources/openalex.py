@@ -34,6 +34,7 @@ class OpenAlexSource:
 
     @staticmethod
     def match_author(name: str | None, works: list[dict]) -> list[dict]:
+        """Return conservative name matches without claiming cross-source identity."""
         needle = _norm(name)
         if len(needle) < 4:
             return []
@@ -50,6 +51,9 @@ class OpenAlexSource:
                         "publication_date": work.get("publication_date"),
                         "cited_by_count": work.get("cited_by_count", 0),
                         "author": author.get("display_name"),
+                        "openalex_author_id": author.get("id"),
+                        "identity_status": "uncertain_name_match",
+                        "identity_confidence": 0.35,
                     }
                 )
                 break
