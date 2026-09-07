@@ -42,11 +42,25 @@ Not in v0.1: recruiting CRM, automated outreach, private-data enrichment, Linked
 
 ## Run locally
 
-Requires Python 3.11+.
+Ghost Talent supports Python 3.8 and newer.
+
+### macOS launcher
+
+Clone the repository, then run:
+
+```bash
+chmod +x start.command
+./start.command
+```
+
+After the first `chmod`, `start.command` can also be opened from Finder. It creates a local virtual environment, installs compatible dependencies, starts the server and opens the browser automatically.
+
+### Manual setup
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip setuptools
 pip install -e .
 python -m ghost_talent.app
 ```
