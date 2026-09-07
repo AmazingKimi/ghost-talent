@@ -21,6 +21,7 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
 
         scored = []
         for item in github_candidates:
+            subject_id = f"github:{item['login'].lower()}"
             paper_matches = openalex.match_author(item.get("name"), works)
             evidence = []
 
@@ -30,6 +31,7 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
                         type="repository_contribution",
                         source="github",
                         source_url=repo["url"],
+                        subject_id=subject_id,
                         value={
                             "repository": repo["name"],
                             "contributions": repo["contributions"],
@@ -46,6 +48,7 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
                         type="merged_pull_request",
                         source="github",
                         source_url=top_pr["url"],
+                        subject_id=subject_id,
                         observed_at=top_pr.get("merged_or_closed_at"),
                         value={
                             "repository": quality.get("repository"),
@@ -66,6 +69,7 @@ async def scout(query: str, limit: int = 20) -> list[dict]:
                         type="paper",
                         source="openalex",
                         source_url=paper["url"],
+                        subject_id=subject_id,
                         observed_at=paper.get("publication_date"),
                         value={
                             "title": paper["title"],
