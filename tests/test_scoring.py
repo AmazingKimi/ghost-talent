@@ -29,12 +29,22 @@ class GhostScoreTests(unittest.TestCase):
         result = score_candidate(self.make_candidate())
         self.assertGreaterEqual(result["ghost_score"], 0)
         self.assertLessEqual(result["ghost_score"], 100)
-        self.assertEqual(result["score_version"], "0.1.1")
+        self.assertEqual(result["score_version"], "0.1.2")
         self.assertIn(result["trend"], {"accelerating", "stable", "decelerating"})
-        self.assertIn("capability", result)
-        self.assertIn("momentum", result)
-        self.assertIn("visibility_gap", result)
-        self.assertIn("evidence_confidence", result)
+        self.assertIn("drivers", result)
+        self.assertIn("capability", result["drivers"])
+        self.assertIn("momentum", result["drivers"])
+        self.assertIn("visibility", result["drivers"])
+        self.assertIn("confidence", result["drivers"])
+
+    def test_driver_values_match_candidate_evidence(self):
+        result = score_candidate(self.make_candidate())
+        drivers = result["drivers"]
+        self.assertEqual(drivers["capability"]["top_repository"]["name"], "org/project")
+        self.assertEqual(drivers["momentum"]["events_7d"], 8)
+        self.assertEqual(drivers["momentum"]["events_30d"], 18)
+        self.assertEqual(drivers["visibility"]["followers"], 42)
+        self.assertEqual(drivers["confidence"]["paper_matches"], 0)
 
     def test_momentum_changes_with_recent_acceleration(self):
         accelerating = score_candidate(
@@ -44,6 +54,10 @@ class GhostScoreTests(unittest.TestCase):
             self.make_candidate(recent_events_7d=1, recent_events_30d=20, recent_events_90d=60)
         )
         self.assertGreater(accelerating["momentum"], slowing["momentum"])
+        self.assertGreater(
+            accelerating["drivers"]["momentum"]["acceleration_ratio"],
+            slowing["drivers"]["momentum"]["acceleration_ratio"],
+        )
 
     def test_single_repo_contribution_volume_does_not_force_capability_to_100(self):
         result = score_candidate(
