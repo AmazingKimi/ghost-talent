@@ -1,27 +1,26 @@
 import math
 from dataclasses import asdict
 from .models import Candidate
-
-def _clamp(value:float)->float:return round(max(0.0,min(100.0,value)),1)
-def _repo_capability(repository:dict)->float:
-    contributions=max(int(repository.get("contributions",0)),0);stars=max(int(repository.get("stars",0)),0);return min(92.0,8.0*math.log1p(min(contributions,250))+4.0*math.log1p(stars))
-def _contribution_quality(candidate:Candidate)->tuple[float,dict]:
-    quality=candidate.contribution_quality or {};top_pr=quality.get("top_pr") or {}
-    if not quality.get("available") or not top_pr:return 0.0,{"available":False,"score":0.0,"reason":"merged PR quality evidence unavailable"}
-    merged=max(int(quality.get("merged_pr_count",0)),0);core=max(int(top_pr.get("core_file_count",0)),0);changed=max(int(top_pr.get("changed_files_sampled",0)),0);keywords=top_pr.get("keyword_hits") or [];volume=max(int(top_pr.get("additions",0)),0)+max(int(top_pr.get("deletions",0)),0);core_ratio=min(core/max(changed,1),1.0);score=_clamp(min(28.0,12.0*math.log1p(merged))+34.0*core_ratio+min(22.0,5.5*len(keywords))+min(16.0,4.0*math.log1p(volume)));return score,{"available":True,"score":score,"repository":quality.get("repository"),"merged_pr_count":merged,"top_pr":top_pr,"core_ratio":round(core_ratio,2)}
-def score_candidate(candidate:Candidate)->dict:
-    repos=[{**r,"capability_signal":round(_repo_capability(r),1)} for r in candidate.repositories];repos.sort(key=lambda r:r["capability_signal"],reverse=True);scores=[r["capability_signal"] for r in repos];base=_clamp(sum(scores[:3])/len(scores[:3])+4.0*math.log1p(len(scores))) if scores else 0.0;quality,qdriver=_contribution_quality(candidate);capability=_clamp(base+0.18*quality)
-    prior=max(candidate.recent_events_90d-candidate.recent_events_30d,0);prior_week=prior/8.57 if prior else 0.0;current=float(candidate.recent_events_7d);acc=current/prior_week if prior_week>0 else 1.6 if current>0 else 0.0;active=min(candidate.active_days_30d/12.0,1.0);density=min(30.0/candidate.observed_event_span_days,2.0)/2.0 if candidate.observed_event_span_days>0 else 0.0;momentum=0.0 if candidate.recent_events_30d==0 else _clamp(0.65*_clamp(50.0+24.0*math.log2(max(acc,0.25)))+20.0*active+15.0*density)
-    visibility=_clamp(18.0*math.log1p(max(candidate.followers,0)));gap=_clamp(50.0+0.6*(capability-visibility));reasons=["GitHub repository contribution evidence"];confidence=35.0
-    if candidate.name:confidence+=8.0;reasons.append("public GitHub name available")
-    confidence+=min(12.0,4.0*len(candidate.repositories))
-    if len(candidate.repositories)>1:reasons.append(f"evidence across {len(candidate.repositories)} repositories")
-    if qdriver.get("available"):confidence+=8.0;reasons.append("merged PR quality evidence")
-    verified=[p for p in candidate.paper_matches if p.get("identity_status")=="verified"];uncertain=[p for p in candidate.paper_matches if p.get("identity_status")!="verified"]
-    if verified:confidence+=10.0+min(10.0,5.0*max(len(verified)-1,0));reasons.append(f"{len(verified)} verified OpenAlex match(es)")
-    if uncertain:reasons.append(f"{len(uncertain)} uncertain OpenAlex name match(es) excluded from confidence")
-    noise=candidate.noise or {};noise_clear=noise.get("status","clear")=="clear"
-    if not noise_clear:confidence-=15.0;reasons.append("data trust noise flag: "+", ".join(noise.get("reasons") or ["unspecified"]))
-    confidence=_clamp(confidence);ghost=_clamp(.35*capability+.35*momentum+.20*gap+.10*confidence);trend="accelerating" if momentum>=65 else "decelerating" if momentum<38 else "stable";radar=_clamp(.35*momentum+.30*quality+.25*gap+.10*confidence);early=bool(noise_clear and qdriver.get("available") and radar>=65 and momentum>=60 and gap>=45);top=repos[0] if repos else None
-    drivers={"capability":{"repository_count":len(candidate.repositories),"base_capability":base,"contribution_quality":quality,"top_repository":top,"top_repositories":repos[:3]},"contribution_quality":qdriver,"momentum":{"events_7d":candidate.recent_events_7d,"events_30d":candidate.recent_events_30d,"events_90d":candidate.recent_events_90d,"active_days_30d":candidate.active_days_30d,"current_weekly_rate":round(current,2),"prior_weekly_rate":round(prior_week,2),"acceleration_ratio":round(acc,2),"observed_event_span_days":candidate.observed_event_span_days},"visibility":{"followers":candidate.followers,"visibility_score":visibility},"confidence":{"paper_matches":len(candidate.paper_matches),"verified_paper_matches":len(verified),"uncertain_paper_matches":len(uncertain),"reasons":reasons},"data_trust":{"noise_status":noise.get("status","clear"),"noise_reasons":noise.get("reasons") or [],"noise_repositories":noise.get("noise_repositories") or []},"radar":{"score":radar,"early_signal":early,"requirements":{"quality_evidence":bool(qdriver.get("available")),"noise_clear":noise_clear,"momentum_at_least_60":momentum>=60,"visibility_gap_at_least_45":gap>=45,"radar_score_at_least_65":radar>=65}}}
-    return {"score_version":"0.1.6","ghost_score":ghost,"capability":capability,"momentum":momentum,"visibility_gap":gap,"evidence_confidence":confidence,"trend":trend,"radar_score":radar,"early_signal":early,"drivers":drivers,"candidate":asdict(candidate)}
+def _clamp(v):return round(max(0,min(100,float(v))),1)
+def _repo_score(r):return min(85,7*math.log1p(min(max(int(r.get("contributions",0)),0),200))+3*math.log1p(max(int(r.get("stars",0)),0)))
+def _external(e):
+ merged=int(e.get("external_merged_prs",0));recognized=int(e.get("recognized_upstream_prs",0));core=int(e.get("core_path_prs",0));score=_clamp(min(45,16*math.log1p(merged))+min(35,22*math.log1p(recognized))+min(20,13*math.log1p(core)));return score
+def score_candidate(c:Candidate)->dict:
+ repos=sorted([{**r,"capability_signal":round(_repo_score(r),1)} for r in c.repositories],key=lambda r:r["capability_signal"],reverse=True);internal=_clamp(sum(r["capability_signal"] for r in repos[:3])/max(1,len(repos[:3]))) if repos else 0;ext=c.external_validation or {};external=_external(ext)
+ prior=max(c.recent_events_90d-c.recent_events_30d,0);prior_week=prior/8.57 if prior else 0;acc=c.recent_events_7d/prior_week if prior_week else (1.6 if c.recent_events_7d else 0);momentum=0 if not c.recent_events_30d else _clamp(.65*_clamp(50+24*math.log2(max(acc,.25)))+20*min(c.active_days_30d/12,1)+15*(min(30/c.observed_event_span_days,2)/2 if c.observed_event_span_days else 0));visibility=_clamp(18*math.log1p(max(c.followers,0)));capability=_clamp(.65*internal+.35*external);gap=_clamp(50+.6*(capability-visibility))
+ external_count=int(ext.get("external_merged_prs",0));self_evidence=max(sum(int(r.get("contributions",0)) for r in c.repositories),0);external_units=external_count*20+int(ext.get("recognized_upstream_prs",0))*25+int(ext.get("core_path_prs",0))*15;research_units=sum(1 for p in c.paper_matches if p.get("identity_status")=="verified_external_link")*20;total=max(self_evidence+external_units+research_units,1);mix={"self_owned_or_discovery_repo_pct":round(100*self_evidence/total,1),"external_upstream_pct":round(100*external_units/total,1),"verified_research_pct":round(100*research_units/total,1)}
+ confidence=35+min(12,4*len(c.repositories))+(8 if c.name else 0)+(12 if external_count else 0)+(8 if ext.get("recognized_upstream_prs") else 0);noise_clear=(c.noise or {}).get("status","clear")=="clear";concentration=mix["self_owned_or_discovery_repo_pct"]>80 and external_count==0
+ if concentration:confidence-=18
+ if not noise_clear:confidence-=15
+ confidence=_clamp(confidence);ghost=_clamp(.30*capability+.25*external+.25*momentum+.10*gap+.10*confidence);radar=_clamp(.35*external+.25*momentum+.20*gap+.15*capability+.05*confidence)
+ if not noise_clear or confidence<40:status="LOW CONFIDENCE"
+ elif radar>=75 and external>=70 and confidence>=65:status="STRONG SIGNAL"
+ elif radar>=65 and external>=50 and confidence>=55:status="EARLY SIGNAL"
+ elif radar>=50 or internal>=55:status="WATCH"
+ else:status="DISCOVERED"
+ early=status in {"STRONG SIGNAL","EARLY SIGNAL"};reasons=[]
+ if external_count:reasons.append(f"{external_count} external merged PR(s)")
+ if ext.get("recognized_upstream_prs"):reasons.append(f"{ext['recognized_upstream_prs']} recognized upstream PR(s)")
+ if ext.get("core_path_prs"):reasons.append(f"{ext['core_path_prs']} core-path external PR signal(s)")
+ if concentration:reasons.append("evidence concentration risk: >80% self/discovery-repo activity with no external merged PR")
+ return {"score_version":"0.2.0","ghost_score":ghost,"radar_score":radar,"capability":capability,"internal_capability":internal,"external_validation":external,"momentum":momentum,"visibility_gap":gap,"evidence_confidence":confidence,"recommendation_status":status,"early_signal":early,"trend":"accelerating" if momentum>=65 else "decelerating" if momentum<38 else "stable","evidence_mix":mix,"drivers":{"capability":{"internal":internal,"external":external,"top_repositories":repos[:3]},"external_validation":{**ext,"score":external,"reasons":reasons},"evidence_mix":mix,"momentum":{"events_7d":c.recent_events_7d,"events_30d":c.recent_events_30d,"events_90d":c.recent_events_90d,"active_days_30d":c.active_days_30d,"acceleration_ratio":round(acc,2)},"visibility":{"followers":c.followers,"visibility_score":visibility},"confidence":{"score":confidence,"evidence_concentration_risk":concentration},"data_trust":{"noise_status":(c.noise or {}).get("status","clear")},"radar":{"score":radar,"recommendation_status":status,"requirements":{"external_validation":external,"noise_clear":noise_clear}}},"candidate":asdict(c)}
