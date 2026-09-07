@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ghost Talent</title>
+  <style>
+    :root { color-scheme: light; --ink:#111; --muted:#6d6d6d; --line:#e8e8e8; --paper:#fafafa; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:#fff; color:var(--ink); }
+    main { max-width:1120px; margin:0 auto; padding:72px 28px 96px; }
+    h1 { font-size:64px; line-height:.95; letter-spacing:-.055em; margin:0 0 16px; }
+    .sub { font-size:20px; color:var(--muted); margin:0 0 42px; }
+    .search { display:flex; gap:10px; margin-bottom:36px; }
+    input { flex:1; font:inherit; font-size:17px; padding:17px 18px; border:1px solid #cfcfcf; border-radius:10px; outline:none; }
+    input:focus { border-color:#111; }
+    button { border:0; border-radius:10px; padding:0 22px; background:#111; color:#fff; font-weight:700; cursor:pointer; }
+    .meta { font-size:13px; color:var(--muted); margin:0 0 18px; min-height:18px; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:14px; }
+    .card { border:1px solid var(--line); border-radius:14px; padding:20px; background:var(--paper); }
+    .top { display:flex; justify-content:space-between; gap:14px; align-items:flex-start; }
+    .name { font-weight:750; font-size:20px; letter-spacing:-.02em; }
+    .login { color:var(--muted); font-size:13px; margin-top:3px; }
+    .score { font-size:34px; font-weight:800; letter-spacing:-.05em; }
+    .label { font-size:10px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:20px 0; }
+    .metric strong { display:block; font-size:16px; }
+    .metric span { font-size:10px; color:var(--muted); }
+    .trend { display:inline-block; font-size:12px; font-weight:650; margin-bottom:14px; }
+    .evidence { border-top:1px solid var(--line); padding-top:14px; }
+    .evidence a { color:#111; text-decoration:none; }
+    .evidence div { font-size:13px; line-height:1.45; margin:8px 0; }
+    .empty { color:var(--muted); font-size:14px; padding:28px 0; }
+    @media (max-width:650px) { h1 { font-size:48px; } .search { flex-direction:column; } button { height:52px; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Ghost Talent</h1>
+  <p class="sub">Discover emerging AI talent before they become obvious.</p>
+  <form class="search" id="form">
+    <input id="q" value="LLM inference CUDA Triton" aria-label="Technical topic" />
+    <button type="submit">SCOUT</button>
+  </form>
+  <p class="meta" id="meta">Search public technical evidence from GitHub and OpenAlex.</p>
+  <section class="grid" id="results"></section>
+</main>
+<script>
+const form = document.getElementById('form');
+const q = document.getElementById('q');
+const meta = document.getElementById('meta');
+const results = document.getElementById('results');
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+function evidenceRows(candidate) {
+  return (candidate.evidence || []).slice(0, 5).map(e => {
+    const label = e.type === 'paper'
+      ? `${e.value.title || 'Paper'} · ${e.value.citations ?? 0} citations`
+      : `${e.value.repository || 'Repository'} · ${e.value.contributions ?? 0} contributions`;
+    return `<div><a href="${esc(e.source_url)}" target="_blank" rel="noreferrer">↗ ${esc(label)}</a></div>`;
+  }).join('');
+}
+
+function card(row) {
+  const c = row.candidate;
+  return `<article class="card">
+    <div class="top">
+      <div><div class="name">${esc(c.name || c.login)}</div><div class="login">@${esc(c.login)}</div></div>
+      <div><div class="score">${row.ghost_score}</div><div class="label">Ghost Score</div></div>
+    </div>
+    <div class="metrics">
+      <div class="metric"><strong>${row.capability}</strong><span>Capability</span></div>
+      <div class="metric"><strong>${row.momentum}</strong><span>Momentum</span></div>
+      <div class="metric"><strong>${row.visibility_gap}</strong><span>Visibility Gap</span></div>
+      <div class="metric"><strong>${row.evidence_confidence}</strong><span>Confidence</span></div>
+    </div>
+    <div class="trend">${esc(row.trend.toUpperCase())}</div>
+    <div class="evidence">${evidenceRows(c) || '<div>No supporting evidence returned.</div>'}</div>
+    <div class="evidence"><div><a href="${esc(c.profile_url)}" target="_blank" rel="noreferrer">↗ GitHub profile</a></div></div>
+  </article>`;
+}
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  const term = q.value.trim();
+  if (!term) return;
+  meta.textContent = 'Scouting public technical evidence…';
+  results.innerHTML = '';
+  try {
+    const response = await fetch(`/api/scout?q=${encodeURIComponent(term)}&limit=20`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || 'Scout failed');
+    meta.textContent = `${data.count} candidates · ranked from current public evidence`;
+    results.innerHTML = data.results.map(card).join('') || '<div class="empty">No candidates found.</div>';
+  } catch (error) {
+    meta.textContent = error.message;
+  }
+});
+</script>
+</body>
+</html>
