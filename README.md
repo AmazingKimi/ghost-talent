@@ -59,7 +59,7 @@ The current Radar model emphasizes:
 
 ## Current workflow
 
-`technical topic → wide scout → contributor + merged-PR discovery → evidence → scoring → ranking → immutable snapshot → first-detected ledger`
+`technical topic → wide scout → contributor + merged-PR discovery → evidence → scoring → ranking → immutable snapshot → first-detected ledger → longitudinal history → benchmark cohort`
 
 Current public sources:
 
@@ -77,24 +77,58 @@ Current capabilities include:
 - first-detected ledger
 - deterministic Ghost Score explanations
 - Ghost Radar / EARLY SIGNAL detection
+- source-status reporting
+- conservative cross-source identity handling
+- append-only candidate time series
+- 7-day / 30-day trajectory semantics
+- Rising Fast v2
+- local query watchlist runner
+- frozen benchmark cohort engine
 
 ## Historical moat
 
-Every successful Scout run can produce an append-only historical snapshot. Candidate first-detection records are retained separately.
+Every successful Scout run can produce an append-only historical snapshot. Candidate first-detection records and query-scoped longitudinal observations are retained separately.
 
 That makes it possible to ask, later:
 
 > Did Ghost Talent identify this person before they became obvious?
 
-The long-term benchmark will measure metrics such as **Precision@K**, breakout rate by rank bucket, calibration, and **Breakout Lead Time** against simple baselines such as followers, stars and raw contribution count.
+Code can be copied. A dated record of who was found before they became obvious cannot be recreated later.
+
+## Ghost Talent Benchmark
+
+Ghost Talent now includes a versioned benchmark framework designed to test predictive validity rather than assume it.
+
+A benchmark freezes an existing Scout snapshot before outcomes are known, retains Ghost Score and simple baseline values, and evaluates the cohort later at explicit horizons such as 30, 90 and 180 days.
+
+Benchmark v0.1 supports:
+
+- immutable frozen cohorts
+- versioned Breakout Outcome definitions
+- Precision@5 / @10 / @20
+- Breakout Lead Time
+- comparison against followers, repository stars and raw contributions
+- outcome-adjudication templates
+- explicit no-future-leakage rules
+
+Protocol: [`docs/BENCHMARK.md`](docs/BENCHMARK.md)
+
+Freeze the latest local snapshot for a query:
+
+```bash
+ghost-talent-benchmark freeze \
+  --query "LLM inference CUDA Triton" \
+  --benchmark-id "2026-09-08-cuda-triton-v01" \
+  --top-k 20
+```
+
+A frozen cohort is written once and cannot be silently overwritten.
 
 Historical evaluation must never use information that was not observable at the original `as_of_date`.
 
-Code can be copied. A dated record of who was found before they became obvious cannot be recreated later.
-
 ## Run locally
 
-Ghost Talent supports Python 3.8 and newer.
+Ghost Talent supports Python 3.10 and newer.
 
 ### macOS launcher
 
@@ -133,6 +167,7 @@ A GitHub token is optional but recommended because unauthenticated GitHub API re
 6. Backtests must prevent future-information leakage.
 7. Missing evidence stays missing; it is never fabricated.
 8. Sensitive personal attributes are outside the ranking model.
+9. Benchmark wins and misses both remain visible.
 
 ## Roadmap
 
@@ -140,16 +175,15 @@ The public roadmap is tracked in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 Near-term priorities:
 
-- score history and Rising Fast detection
-- explicit source status and degradation reporting
-- stronger identity resolution
-- larger multi-source discovery pools
-- historical backtesting
-- the first public Ghost Talent Benchmark
+- freeze the first real benchmark cohort
+- continue daily/periodic time-series accumulation
+- 30/90/180-day outcome adjudication
+- stronger identity resolution and more source evidence
+- reproducible public benchmark artifacts
 
 ## v0.1.0
 
-Ghost Talent is usable end-to-end as a local open-source technical talent radar. The `v0.1.0` milestone establishes the public category, methodology, evidence model, Ghost Score, Radar concept, immutable snapshots and first-detected ledger.
+Ghost Talent is usable end-to-end as a local open-source technical talent radar. The `v0.1.0` milestone established the public category, methodology, evidence model, Ghost Score, Radar concept, immutable snapshots and first-detected ledger.
 
 Release notes: [`releases/v0.1.0.md`](releases/v0.1.0.md)
 
@@ -169,7 +203,7 @@ Emerging AI talent · AI engineer discovery · AI researcher discovery · GitHub
 
 ## Limitations
 
-This is an early research and discovery system. GitHub public events provide a limited activity window, OpenAlex identity matching is still conservative and name-based, and source APIs can rate-limit or degrade. Scores are discovery signals, not employment decisions or predictions of future success.
+This is an early research and discovery system. GitHub public events provide a limited activity window, OpenAlex identity matching remains conservative, and source APIs can rate-limit or degrade. Benchmark outcomes require future observation; the existence of the benchmark framework is not evidence that Ghost Talent already has predictive validity.
 
 ## License
 
