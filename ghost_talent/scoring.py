@@ -94,10 +94,15 @@ def score_candidate(candidate: Candidate) -> dict:
     if quality_driver.get("available"):
         evidence_confidence += 8.0
         confidence_reasons.append("merged PR quality evidence")
-    if candidate.paper_matches:
+
+    verified_papers = [p for p in candidate.paper_matches if p.get("identity_status") == "verified"]
+    uncertain_papers = [p for p in candidate.paper_matches if p.get("identity_status") != "verified"]
+    if verified_papers:
         evidence_confidence += 10.0
-        evidence_confidence += min(10.0, 5.0 * max(len(candidate.paper_matches) - 1, 0))
-        confidence_reasons.append(f"{len(candidate.paper_matches)} OpenAlex name match(es)")
+        evidence_confidence += min(10.0, 5.0 * max(len(verified_papers) - 1, 0))
+        confidence_reasons.append(f"{len(verified_papers)} verified OpenAlex match(es)")
+    if uncertain_papers:
+        confidence_reasons.append(f"{len(uncertain_papers)} uncertain OpenAlex name match(es) excluded from confidence")
     evidence_confidence = _clamp(evidence_confidence)
 
     ghost_score = _clamp(0.35 * capability + 0.35 * momentum + 0.20 * visibility_gap + 0.10 * evidence_confidence)
@@ -107,7 +112,6 @@ def score_candidate(candidate: Candidate) -> dict:
     elif momentum < 38:
         trend = "decelerating"
 
-    # Breakout Radar is deliberately evidence-gated. High activity alone is not enough.
     radar_score = _clamp(
         0.35 * momentum
         + 0.30 * contribution_quality
@@ -142,7 +146,12 @@ def score_candidate(candidate: Candidate) -> dict:
             "observed_event_span_days": candidate.observed_event_span_days,
         },
         "visibility": {"followers": candidate.followers, "visibility_score": visibility},
-        "confidence": {"paper_matches": len(candidate.paper_matches), "reasons": confidence_reasons},
+        "confidence": {
+            "paper_matches": len(candidate.paper_matches),
+            "verified_paper_matches": len(verified_papers),
+            "uncertain_paper_matches": len(uncertain_papers),
+            "reasons": confidence_reasons,
+        },
         "radar": {
             "score": radar_score,
             "early_signal": early_signal,
@@ -156,7 +165,7 @@ def score_candidate(candidate: Candidate) -> dict:
     }
 
     return {
-        "score_version": "0.1.4",
+        "score_version": "0.1.5",
         "ghost_score": ghost_score,
         "capability": capability,
         "momentum": momentum,
