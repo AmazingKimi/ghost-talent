@@ -26,12 +26,15 @@ async def favicon():
 @app.get("/api/scout")
 async def run_scout(q: str = Query(min_length=2, max_length=120), limit: int = 20):
     try:
-        results = await scout(q, limit=max(1, min(limit, 20)))
+        scout_result = await scout(q, limit=max(1, min(limit, 20)))
+        results = scout_result["results"]
+        sources = scout_result["sources"]
         snapshot = save_snapshot(ROOT, q, results)
         return {
             "query": q,
             "count": len(results),
             "results": results,
+            "sources": sources,
             "snapshot": snapshot,
         }
     except Exception as exc:
