@@ -27,3 +27,4 @@ class Candidate:
     paper_matches: list[dict[str, Any]]
     evidence: list[Evidence]
     noise: dict[str, Any] = field(default_factory=dict)
+    identity: dict[str, Any] = field(default_factory=dict)
