@@ -12,6 +12,7 @@ dependencies = [
 [project.scripts]
 ghost-talent = "ghost_talent.app:main"
 ghost-talent-watch = "ghost_talent.watch:main"
+ghost-talent-benchmark = "ghost_talent.benchmark:main"
 
 [build-system]
 requires = ["setuptools>=61"]
