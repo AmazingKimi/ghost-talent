@@ -7,6 +7,7 @@ class Evidence:
     type: str
     source: str
     source_url: str
+    subject_id: str
     observed_at: str | None = None
     value: dict[str, Any] = field(default_factory=dict)
     confidence: float = 1.0
