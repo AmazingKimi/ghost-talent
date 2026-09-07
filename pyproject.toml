@@ -1,8 +1,8 @@
 [project]
 name = "ghost-talent"
-version = "0.1.0"
+version = "0.2.0"
 description = "Evidence-grounded discovery for emerging AI engineers and researchers"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 dependencies = [
   "fastapi>=0.103,<0.104",
   "uvicorn[standard]>=0.23,<0.24",
@@ -11,6 +11,7 @@ dependencies = [
 
 [project.scripts]
 ghost-talent = "ghost_talent.app:main"
+ghost-talent-watch = "ghost_talent.watch:main"
 
 [build-system]
 requires = ["setuptools>=61"]
