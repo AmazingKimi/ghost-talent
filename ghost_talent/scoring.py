@@ -18,10 +18,13 @@ def _repo_capability(repository: dict) -> float:
 
 
 def score_candidate(candidate: Candidate) -> dict:
-    repo_scores = sorted(
-        (_repo_capability(repo) for repo in candidate.repositories),
-        reverse=True,
-    )
+    scored_repositories = [
+        {**repo, "capability_signal": round(_repo_capability(repo), 1)}
+        for repo in candidate.repositories
+    ]
+    scored_repositories.sort(key=lambda repo: repo["capability_signal"], reverse=True)
+
+    repo_scores = [repo["capability_signal"] for repo in scored_repositories]
     if repo_scores:
         top = repo_scores[:3]
         capability = _clamp(sum(top) / len(top) + 4.0 * math.log1p(len(repo_scores)))
@@ -30,7 +33,7 @@ def score_candidate(candidate: Candidate) -> dict:
 
     prior_60d = max(candidate.recent_events_90d - candidate.recent_events_30d, 0)
     prior_weekly_rate = prior_60d / 8.57 if prior_60d else 0.0
-    current_weekly_rate = candidate.recent_events_7d
+    current_weekly_rate = float(candidate.recent_events_7d)
 
     if prior_weekly_rate > 0:
         short_acceleration = current_weekly_rate / prior_weekly_rate
@@ -57,13 +60,18 @@ def score_candidate(candidate: Candidate) -> dict:
     visibility = _clamp(18.0 * math.log1p(max(candidate.followers, 0)))
     visibility_gap = _clamp(50.0 + 0.6 * (capability - visibility))
 
+    confidence_reasons = ["GitHub repository contribution evidence"]
     evidence_confidence = 35.0
     if candidate.name:
         evidence_confidence += 8.0
+        confidence_reasons.append("public GitHub name available")
     evidence_confidence += min(12.0, 4.0 * len(candidate.repositories))
+    if len(candidate.repositories) > 1:
+        confidence_reasons.append(f"evidence across {len(candidate.repositories)} repositories")
     if candidate.paper_matches:
         evidence_confidence += 10.0
         evidence_confidence += min(10.0, 5.0 * max(len(candidate.paper_matches) - 1, 0))
+        confidence_reasons.append(f"{len(candidate.paper_matches)} OpenAlex name match(es)")
     evidence_confidence = _clamp(evidence_confidence)
 
     ghost_score = _clamp(
@@ -79,13 +87,41 @@ def score_candidate(candidate: Candidate) -> dict:
     elif momentum < 38:
         trend = "decelerating"
 
+    top_repository = scored_repositories[0] if scored_repositories else None
+    drivers = {
+        "capability": {
+            "repository_count": len(candidate.repositories),
+            "top_repository": top_repository,
+            "top_repositories": scored_repositories[:3],
+        },
+        "momentum": {
+            "events_7d": candidate.recent_events_7d,
+            "events_30d": candidate.recent_events_30d,
+            "events_90d": candidate.recent_events_90d,
+            "active_days_30d": candidate.active_days_30d,
+            "current_weekly_rate": round(current_weekly_rate, 2),
+            "prior_weekly_rate": round(prior_weekly_rate, 2),
+            "acceleration_ratio": round(short_acceleration, 2),
+            "observed_event_span_days": candidate.observed_event_span_days,
+        },
+        "visibility": {
+            "followers": candidate.followers,
+            "visibility_score": visibility,
+        },
+        "confidence": {
+            "paper_matches": len(candidate.paper_matches),
+            "reasons": confidence_reasons,
+        },
+    }
+
     return {
-        "score_version": "0.1.1",
+        "score_version": "0.1.2",
         "ghost_score": ghost_score,
         "capability": capability,
         "momentum": momentum,
         "visibility_gap": visibility_gap,
         "evidence_confidence": evidence_confidence,
         "trend": trend,
+        "drivers": drivers,
         "candidate": asdict(candidate),
     }
