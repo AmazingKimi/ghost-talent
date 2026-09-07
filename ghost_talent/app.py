@@ -27,9 +27,15 @@ async def run_scout(q: str = Query(min_length=2, max_length=120), limit: int = 2
         sources = scout_result["sources"]
         snapshot = save_snapshot(ROOT, q, results)
         histories = snapshot.get("history", {})
+        trajectories = snapshot.get("trajectory", {})
         for row in results:
             login = str(row.get("candidate", {}).get("login") or "")
             row["history"] = histories.get(login, {"status": "building_history"})
+            row["trajectory"] = trajectories.get(login, {
+                "observation_count": 1,
+                "d7": {"status": "building_history", "days": 7},
+                "d30": {"status": "building_history", "days": 30},
+            })
         return {"query": q, "count": len(results), "results": results, "sources": sources, "snapshot": snapshot}
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Scout failed: {exc}") from exc
