@@ -7,6 +7,11 @@ import httpx
 
 
 API = "https://api.github.com"
+CORE_TERMS = (
+    "cuda", "triton", "kernel", "kernels", "compiler", "inference", "attention",
+    "gemm", "moe", "quant", "quantization", "nvfp", "fp8", "int8", "runtime",
+    "backend", "gpu", "csrc", "ops", "benchmark", "benchmarks",
+)
 
 
 class GitHubSource:
@@ -14,6 +19,7 @@ class GitHubSource:
         headers = {"Accept": "application/vnd.github+json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
+        self.authenticated = bool(token)
         self.client = httpx.AsyncClient(headers=headers, timeout=20.0)
 
     async def close(self) -> None:
@@ -80,6 +86,7 @@ class GitHubSource:
                         raise
 
             counts = self._event_counts(events)
+            quality = await self._contribution_quality(item) if self.authenticated and not rate_limited else self._empty_quality()
             enriched.append(
                 {
                     **item,
@@ -87,10 +94,92 @@ class GitHubSource:
                     "profile_url": profile.get("html_url") if profile else item["profile_url"],
                     "followers": profile.get("followers", 0) if profile else 0,
                     "github_enrichment_complete": profile is not None,
+                    "contribution_quality": quality,
                     **counts,
                 }
             )
         return enriched
+
+    async def _contribution_quality(self, item: dict) -> dict:
+        repositories = sorted(
+            item.get("repositories", []),
+            key=lambda repo: int(repo.get("contributions", 0)),
+            reverse=True,
+        )
+        if not repositories:
+            return self._empty_quality()
+
+        repo = repositories[0]
+        repo_name = repo["name"]
+        login = item["login"]
+        try:
+            search = await self._get(
+                f"{API}/search/issues",
+                q=f"repo:{repo_name} author:{login} type:pr is:merged",
+                sort="updated",
+                order="desc",
+                per_page=3,
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in {403, 422, 429}:
+                return self._empty_quality(repo_name)
+            raise
+
+        prs = search.get("items", [])[:3]
+        if not prs:
+            return self._empty_quality(repo_name)
+
+        top_pr = prs[0]
+        files: list[dict] = []
+        try:
+            files = await self._get(
+                f"{API}/repos/{repo_name}/pulls/{top_pr['number']}/files",
+                per_page=30,
+            )
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code not in {403, 404, 429}:
+                raise
+
+        filenames = [str(file.get("filename", "")) for file in files]
+        core_files = [name for name in filenames if self._is_core_path(name)]
+        title = str(top_pr.get("title") or "")
+        keyword_hits = sorted({term for term in CORE_TERMS if term in title.lower() or any(term in name.lower() for name in filenames)})
+        additions = sum(int(file.get("additions", 0)) for file in files)
+        deletions = sum(int(file.get("deletions", 0)) for file in files)
+
+        return {
+            "available": True,
+            "repository": repo_name,
+            "merged_pr_count": int(search.get("total_count", len(prs))),
+            "sampled_pr_count": len(prs),
+            "top_pr": {
+                "number": top_pr.get("number"),
+                "title": title,
+                "url": top_pr.get("html_url"),
+                "merged_or_closed_at": top_pr.get("closed_at"),
+                "changed_files_sampled": len(files),
+                "core_files": core_files[:8],
+                "core_file_count": len(core_files),
+                "keyword_hits": keyword_hits,
+                "additions": additions,
+                "deletions": deletions,
+            },
+        }
+
+    @staticmethod
+    def _is_core_path(filename: str) -> bool:
+        lower = filename.lower()
+        return any(term in lower for term in CORE_TERMS) or lower.endswith((".cu", ".cuh", ".cc", ".cpp"))
+
+    @staticmethod
+    def _empty_quality(repository: str | None = None) -> dict:
+        return {
+            "available": False,
+            "repository": repository,
+            "merged_pr_count": 0,
+            "sampled_pr_count": 0,
+            "top_pr": None,
+        }
 
     @staticmethod
     def _event_counts(events: list[dict]) -> dict[str, int | float]:
