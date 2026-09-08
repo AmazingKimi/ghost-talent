@@ -1,0 +1,115 @@
+name: Prospective Cohort Runner
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/prospective-cohort.yml'
+  workflow_dispatch:
+    inputs:
+      query:
+        description: 'Scout query to freeze as a v0.2.8 prospective cohort'
+        required: true
+        default: 'distributed training systems'
+
+permissions:
+  contents: write
+
+env:
+  DEFAULT_QUERY: distributed training systems
+
+jobs:
+  prospective-cohort:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: ghost-talent-prospective-cohort
+      cancel-in-progress: false
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip setuptools
+          pip install -e .
+
+      - name: Resolve query
+        id: query
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            QUERY='${{ inputs.query }}'
+          else
+            QUERY="$DEFAULT_QUERY"
+          fi
+          echo "query=$QUERY" >> "$GITHUB_OUTPUT"
+          echo "Running prospective cohort for: $QUERY"
+
+      - name: Run prospective cohort
+        id: run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set +e
+          ghost-talent-benchmark prospective-batch \
+            --query "${{ steps.query.outputs.query }}" \
+            | tee prospective-cohort-result.json
+          CODE=${PIPESTATUS[0]}
+          set -e
+          echo "exit_code=$CODE" >> "$GITHUB_OUTPUT"
+          cat prospective-cohort-result.json
+
+      - name: Detect frozen cohort
+        id: detect
+        shell: bash
+        run: |
+          COUNT=$(find benchmarks -path '*-v028/cohort.json' -type f 2>/dev/null | wc -l | tr -d ' ')
+          echo "count=$COUNT" >> "$GITHUB_OUTPUT"
+          if [ "$COUNT" -gt 0 ]; then
+            echo "frozen=true" >> "$GITHUB_OUTPUT"
+            find benchmarks -path '*-v028/cohort.json' -type f -print
+          else
+            echo "frozen=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload run evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: prospective-cohort-run-${{ github.run_id }}
+          if-no-files-found: warn
+          path: |
+            prospective-cohort-result.json
+            benchmarks/
+            snapshots/
+            ledger/
+
+      - name: Commit immutable benchmark evidence
+        if: steps.detect.outputs.frozen == 'true'
+        shell: bash
+        run: |
+          git config user.name 'Amazing Kimi'
+          git config user.email 'amazingkimi@163.com'
+          git add benchmarks snapshots ledger
+          if git diff --cached --quiet; then
+            echo 'No new benchmark evidence to commit.'
+            exit 0
+          fi
+          git commit -m "Freeze automated v0.2.8 prospective cohort"
+          git push origin HEAD:main
+
+      - name: Report non-freeze without hiding evidence
+        if: steps.detect.outputs.frozen != 'true'
+        shell: bash
+        run: |
+          echo 'No cohort was frozen in this run. The uploaded run artifact contains the exact result.'
+          exit 1
