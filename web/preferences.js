@@ -10,14 +10,23 @@
     return localStorage.getItem('ghostTalentTheme') || 'system';
   }
 
-  window.setGhostTalentLanguage = function setGhostTalentLanguage(value) {
+  window.setGhostTalentLanguage = async function setGhostTalentLanguage(value) {
     localStorage.setItem('ghostTalentLang', value);
-    location.reload();
+    if (typeof lang !== 'undefined') lang = value;
+    if (typeof applyLanguage === 'function') applyLanguage();
+    else document.documentElement.lang = value === 'zh' ? 'zh-CN' : 'en';
+    if (typeof window.settingsPanels === 'function') await window.settingsPanels();
   };
 
-  window.setGhostTalentTheme = function setGhostTalentTheme(value) {
+  window.setGhostTalentTheme = async function setGhostTalentTheme(value) {
     localStorage.setItem('ghostTalentTheme', value);
-    location.reload();
+    if (typeof themePref !== 'undefined') themePref = value;
+    if (typeof applyTheme === 'function') applyTheme();
+    else {
+      const dark = value === 'dark' || (value === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    }
+    if (typeof window.settingsPanels === 'function') await window.settingsPanels();
   };
 
   window.disconnectGhostTalentGitHub = async function disconnectGhostTalentGitHub() {
@@ -31,8 +40,8 @@
   };
 
   window.connectGhostTalentGitHub = async function connectGhostTalentGitHub() {
-    const lang = currentLanguage();
-    const zh = lang === 'zh';
+    const current = currentLanguage();
+    const zh = current === 'zh';
     const response = await fetch('/api/github/connect/start', { method: 'POST' });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -72,15 +81,15 @@
     const panels = document.getElementById('panels');
     if (!panels) return;
 
-    const lang = currentLanguage();
-    const theme = currentTheme();
+    const currentLang = currentLanguage();
+    const currentThemeValue = currentTheme();
     let runtime = null;
     try {
       const response = await fetch('/api/runtime');
       if (response.ok) runtime = await response.json();
     } catch (_) {}
 
-    const zh = lang === 'zh';
+    const zh = currentLang === 'zh';
     const gh = runtime?.github || {};
     const connected = Boolean(gh.connected);
     const quota = gh.limit ? `${gh.remaining ?? '—'} / ${gh.limit}` : '—';
@@ -96,7 +105,7 @@
         <section class="preference-group github-connect-card">
           <h3>${zh ? 'GitHub 连接' : 'GitHub connection'}</h3>
           <p>${connected
-            ? (zh ? `已连接 ${account}。当前 REST API 额度：${quota} / 小时额度。` : `Connected ${account}. Current REST API quota: ${quota}.`)
+            ? (zh ? `已连接 ${account}。当前 REST API 额度：${quota}。` : `Connected ${account}. Current REST API quota: ${quota}.`)
             : (zh ? `当前使用匿名公共额度（通常只有 60 次/小时）。连接自己的 GitHub 后通常可使用 5,000 次/小时的个人认证额度。` : `Currently using anonymous public quota (typically only 60 requests/hour). Connect your GitHub account to use the authenticated personal quota, typically 5,000/hour.`)}</p>
           <div class="preference-actions">
             ${connected
@@ -112,17 +121,17 @@
           <h3>${zh ? '语言' : 'Language'}</h3>
           <p>${zh ? '切换界面语言。设置会保存在当前设备。' : 'Choose the interface language. The preference is saved on this device.'}</p>
           <div class="preference-actions">
-            <button class="${lang === 'zh' ? 'active' : ''}" onclick="setGhostTalentLanguage('zh')">中文</button>
-            <button class="${lang === 'en' ? 'active' : ''}" onclick="setGhostTalentLanguage('en')">English</button>
+            <button class="${currentLang === 'zh' ? 'active' : ''}" onclick="setGhostTalentLanguage('zh')">中文</button>
+            <button class="${currentLang === 'en' ? 'active' : ''}" onclick="setGhostTalentLanguage('en')">English</button>
           </div>
         </section>
         <section class="preference-group">
           <h3>${zh ? '外观' : 'Appearance'}</h3>
           <p>${zh ? '选择浅色、深色或跟随系统。' : 'Choose light, dark, or follow your system setting.'}</p>
           <div class="preference-actions">
-            <button class="${theme === 'light' ? 'active' : ''}" onclick="setGhostTalentTheme('light')">${zh ? '浅色' : 'Light'}</button>
-            <button class="${theme === 'dark' ? 'active' : ''}" onclick="setGhostTalentTheme('dark')">${zh ? '深色' : 'Dark'}</button>
-            <button class="${theme === 'system' ? 'active' : ''}" onclick="setGhostTalentTheme('system')">${zh ? '跟随系统' : 'System'}</button>
+            <button class="${currentThemeValue === 'light' ? 'active' : ''}" onclick="setGhostTalentTheme('light')">${zh ? '浅色' : 'Light'}</button>
+            <button class="${currentThemeValue === 'dark' ? 'active' : ''}" onclick="setGhostTalentTheme('dark')">${zh ? '深色' : 'Dark'}</button>
+            <button class="${currentThemeValue === 'system' ? 'active' : ''}" onclick="setGhostTalentTheme('system')">${zh ? '跟随系统' : 'System'}</button>
           </div>
         </section>
       </div>
