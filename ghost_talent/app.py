@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import FileResponse
 
 from .dossier import build_dossier
-from .scout import scout
+from .scout import scout, scout_preview
 from .snapshot import save_snapshot
 
 app = FastAPI(title="Ghost Talent", version="0.2.0")
@@ -19,6 +19,13 @@ async def index():
 @app.get("/favicon.svg", include_in_schema=False)
 async def favicon():
     return FileResponse(ROOT / "web" / "favicon.svg", media_type="image/svg+xml")
+
+@app.get("/api/scout/preview")
+async def run_scout_preview(q: str = Query(min_length=2, max_length=120), limit: int = 6):
+    try:
+        return await scout_preview(q, limit=max(1, min(limit, 6)))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Preview failed: {exc}") from exc
 
 @app.get("/api/scout")
 async def run_scout(q: str = Query(min_length=2, max_length=120), limit: int = 20):
