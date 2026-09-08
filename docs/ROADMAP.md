@@ -6,15 +6,16 @@ The roadmap is intentionally public so methodology changes, product scope, bench
 
 ## Current research status
 
-- Active scoring model: **0.2.7**
+- Active scoring model: **0.2.8**
 - First real prospective benchmark cohort: **frozen and immutable**
 - Benchmark ID: `2026-09-08-cuda-triton-v01`
 - Cohort size: 20
 - Frozen score version: `0.1.5`
 - 30 / 90 / 180-day outcomes: **not yet mature**
 - Predictive validity: **not yet established**
+- Current-model validation gap: **no frozen v0.2.8 cohort yet**
 
-The frozen v0.1.5 cohort will never be recomputed with later scoring versions.
+The frozen v0.1.5 cohort will never be recomputed with later scoring versions. Its future result validates v0.1.5 only, so the immediate benchmark priority is a new independent prospective cohort under v0.2.8.
 
 ## v0.1 — Public foundation
 
@@ -45,7 +46,7 @@ Goal: reduce obvious false positives before claiming predictive value.
 - [x] recognized-upstream context
 - [x] changed-file core-path inspection
 - [x] owner/member maintainer-approval evidence
-- [x] substantive-change gate for inspected upstream PRs
+- [x] substantive-change gate for inspected external PRs
 - [x] exclude docs/tests/examples/CI from core-path evidence
 - [x] exclude stars/forks/general issue activity from Momentum
 - [x] stop inferring acceleration when prior history is missing
@@ -55,9 +56,11 @@ Goal: reduce obvious false positives before claiming predictive value.
 - [x] component-correlation analysis tooling
 - [x] retrospective-validation protocol
 - [x] responsible-use / employment-decision boundary
+- [x] **allow non-curated external projects to earn validation through substantive core work or owner/member approval**
+- [x] demote curated upstream from mandatory gate to contextual bonus
 - [ ] complete a documented identity-resolution audit sample
 - [ ] migrate all longitudinal history keys to stable GitHub numeric identity where available
-- [ ] expand project-quality evidence beyond a curated upstream allowlist
+- [ ] replace bounded mixed PR inspection with a stronger project-quality / evidence-budget policy
 
 ## v0.3 — Prospective benchmark
 
@@ -71,7 +74,8 @@ Goal: test whether Ghost Talent actually identifies later-breakout technical peo
 - [x] outcome-adjudication template
 - [x] no-future-leakage publication protocol
 - [x] **freeze first real production cohort from local Scout history**
-- [ ] freeze additional prospective cohorts under the current scoring model
+- [ ] **freeze first v0.2.8 prospective cohort**
+- [ ] freeze additional prospective cohorts across multiple technical domains
 - [ ] 30-day outcome adjudication
 - [ ] 90-day outcome adjudication
 - [ ] 180-day outcome adjudication
@@ -128,12 +132,13 @@ ATS/CRM integration, automated outreach, and employment-decision automation are 
 ## Research questions
 
 1. Can externally validated contribution depth outperform raw activity volume?
-2. Can validated trajectory add information beyond short-term GitHub activity?
-3. Does Visibility Gap add independent information beyond Capability and follower count?
-4. How correlated are Internal Capability, External Validation, Momentum, Ghost Score, and Radar in real cohorts?
-5. How much lead time can a public-evidence system achieve before a candidate becomes broadly visible?
-6. Which signals survive adversarial behavior and source truncation?
-7. How often does cross-source identity resolution fail or remain uncertain?
+2. Can verified external work in less-famous projects predict future breakout as well as curated upstream work?
+3. Can validated trajectory add information beyond short-term GitHub activity?
+4. Does Visibility Gap add independent information beyond Capability and follower count?
+5. How correlated are Internal Capability, External Validation, Momentum, Ghost Score, and Radar in real cohorts?
+6. How much lead time can a public-evidence system achieve before a candidate becomes broadly visible?
+7. Which signals survive adversarial behavior and source truncation?
+8. How often does cross-source identity resolution fail or remain uncertain?
 
 ## Non-goals
 
@@ -152,6 +157,6 @@ Do not describe benchmark infrastructure as benchmark success.
 
 The correct current statement is:
 
-> **The first real prospective cohort is frozen; outcome results have not matured yet.**
+> **The first real prospective cohort is frozen; outcome results have not matured yet, and current v0.2.8 still needs its own frozen cohort.**
 
 Predictive-validity claims require frozen cohorts, explicit outcome rules, a stated evaluation horizon, and baseline comparisons. Wins and misses both stay visible.
