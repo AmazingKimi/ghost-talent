@@ -18,9 +18,9 @@ Ghost Talent asks:
 
 Ghost Talent is an **experimental research and discovery system**. It does **not** yet have mature predictive-validity results and does not claim to outperform professional sourcing, technical review, or simple baselines.
 
-One real prospective cohort is already frozen and waiting for 30 / 90 / 180-day outcomes. That cohort was frozen under score version `0.1.5`, so its future results will validate that historical model only. A new prospective cohort under the current model is required to validate current behavior directly.
+Six prospective cohorts are currently frozen: one legacy cohort under score version `0.1.5` and five current-model cohorts under `0.2.8`. The five v0.2.8 cohorts contain 20 frozen positions each (100 cohort positions in total; candidates may overlap across cohorts). No 30 / 90 / 180-day outcome horizon has matured yet.
 
-Until outcomes mature, the project should be judged as a falsifiable early-talent hypothesis engine, not a proven prediction system.
+The legacy cohort can validate only its historical model. The five v0.2.8 cohorts are the prospective test of current behavior. Until outcomes mature, the project should be judged as a falsifiable early-talent hypothesis engine, not a proven prediction system.
 
 ## What is different
 
@@ -90,22 +90,24 @@ Cross-source identity uncertainty remains uncertainty. A name match is not treat
 
 ## Benchmark
 
-The first real production cohort is frozen and immutable:
+Frozen prospective cohorts currently visible in the project record:
 
-- benchmark ID: `2026-09-08-cuda-triton-v01`
-- query: `LLM inference CUDA Triton`
-- source snapshot: `20260907T162245054462Z-b36e731d`
-- as-of: `2026-09-07T16:22:45.054462Z`
-- cohort size: 20
-- score version: `0.1.5`
+| Benchmark ID | Query | Snapshot | Score version | Size |
+| --- | --- | --- | --- | ---: |
+| `2026-09-08-cuda-triton-v01` | `LLM inference CUDA Triton` | `20260907T162245054462Z-b36e731d` | `0.1.5` | 20 |
+| `2026-09-08-llm-inference-cuda-triton-v028` | `LLM inference CUDA Triton` | `20260908T005128477579Z-fd9bc3d3` | `0.2.8` | 20 |
+| `2026-09-08-ai-compiler-runtime-v028` | `AI compiler runtime` | `20260908T005340535599Z-29700119` | `0.2.8` | 20 |
+| `2026-09-08-quantization-kernels-v028` | `quantization kernels` | `20260908T005531156995Z-7dbcac45` | `0.2.8` | 20 |
+| `2026-09-08-inference-infrastructure-v028` | `inference infrastructure` | `20260908T005721112409Z-09e4b189` | `0.2.8` | 20 |
+| `2026-09-08-distributed-training-systems-v028` | `distributed training systems` | `20260908T033259838534Z-0675dccf` | `0.2.8` | 20 |
 
-It must never be recomputed using v0.2.8.
+The distributed-training cohort is committed publicly under [`benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json`](benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json). The earlier four v0.2.8 cohorts were frozen locally before automated artifact publication was added; their immutable metadata is recorded in [`docs/BENCHMARK.md`](docs/BENCHMARK.md), but their full cohort files are not claimed to be public in this repository.
 
-Benchmark metrics include Precision@K, Breakout Lead Time, and comparison against followers, stars and raw contribution count. Wins and misses are both retained.
+This distinction is intentional: **frozen is not the same claim as publicly inspectable**. We do not reconstruct missing historical cohort files from later data merely to make the repository look complete.
 
-**Important validation gap:** the first cohort can validate only frozen score version `0.1.5`. The next benchmark action is to freeze one or more independent prospective cohorts under `0.2.8` so future outcomes can test the current model directly.
+Benchmark metrics include Precision@K, Breakout Lead Time, and comparison against followers, stars and raw contribution count. Wins and misses are both retained. No predictive-validity claim will be made before outcome horizons mature and frozen cohorts can be evaluated against those baselines.
 
-Protocol: [`docs/BENCHMARK.md`](docs/BENCHMARK.md)
+Protocol and exact as-of timestamps: [`docs/BENCHMARK.md`](docs/BENCHMARK.md)
 
 ## Credibility work before outcomes mature
 
@@ -117,7 +119,8 @@ Current credibility work includes:
 - false-positive invariants,
 - component-correlation analysis,
 - identity audit protocol,
-- retrospective validation protocol with explicit historical-observability rules.
+- retrospective validation protocol with explicit historical-observability rules,
+- automated GitHub Actions credibility checks.
 
 These are sanity checks, **not substitutes for predictive validation**.
 
@@ -148,7 +151,8 @@ A GitHub token is optional for lightweight public discovery, but **full External
 ## Known limitations
 
 - no mature predictive-validity result yet,
-- the first frozen cohort validates an older model rather than current v0.2.8,
+- the legacy frozen cohort validates an older model rather than current v0.2.8,
+- four early v0.2.8 cohort files are not yet public even though their freeze metadata is recorded,
 - deterministic weights and thresholds remain uncalibrated hypotheses,
 - GitHub followers are a weak visibility proxy,
 - GitHub public-event history is incomplete and can truncate at 100 events,
@@ -166,7 +170,8 @@ A GitHub token is optional for lightweight public discovery, but **full External
 5. Identity uncertainty remains uncertainty.
 6. Historical evidence cannot be rewritten with future information.
 7. Benchmark wins and misses both remain visible.
-8. Sensitive personal attributes are outside the model.
+8. Frozen evidence and publicly inspectable evidence are stated separately.
+9. Sensitive personal attributes are outside the model.
 
 ## License
 
