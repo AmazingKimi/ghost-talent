@@ -6,6 +6,12 @@
 
 Ghost Talent starts from a technical frontier — CUDA, Triton, LLM inference, compilers, runtimes, distributed systems — and looks for people whose **public technical evidence is becoming stronger before their public visibility catches up**.
 
+## Product UI
+
+![Ghost Talent product tour](docs/images/product-tour.svg)
+
+The interface includes bilingual light/dark modes, evidence-first discovery cards, a persistent watchlist, candidate dossiers, validation views, and local GitHub-connected runtime settings.
+
 Recruiting search asks:
 
 > I need a CUDA engineer. Who matches the role?
