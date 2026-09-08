@@ -12,7 +12,7 @@ def _source_status(r):
 async def scout_preview(query:str,limit:int=6)->dict:
  github=GitHubSource(os.getenv("GITHUB_TOKEN"))
  try:
-  items=await github.discover(query,candidate_limit=max(1,min(limit,6)),quality_budget=0,pr_repo_budget=0)
+  items=await github.discover(query,repo_limit=6,candidate_limit=max(1,min(limit,6)),contributor_limit=12,quality_budget=0,pr_repo_budget=0)
   rows=[]
   for item in items[:limit]:
    rows.append({
