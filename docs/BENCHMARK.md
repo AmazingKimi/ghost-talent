@@ -8,7 +8,7 @@ It is not a leaderboard for hiring decisions. It is a longitudinal research prot
 
 ## Current benchmark status
 
-Ghost Talent now has one legacy prospective cohort frozen under score version `0.1.5` and four additional prospective cohorts frozen under the current score version `0.2.8`.
+Ghost Talent currently has **six frozen prospective cohorts**: one legacy cohort under score version `0.1.5` and five cohorts under the current score version `0.2.8`.
 
 No cohort has mature outcome results yet. Predictive validity is therefore **not established**.
 
@@ -29,18 +29,25 @@ This cohort remains immutable and must never be recomputed with a later model.
 
 ### Current-model cohorts — score version 0.2.8
 
-The following cohorts were frozen on 2026-09-08 from fresh Scout runs using score version `0.2.8`:
+| Benchmark ID | Query | Source snapshot | As-of | Cohort | Public cohort file |
+| --- | --- | --- | --- | ---: | --- |
+| `2026-09-08-llm-inference-cuda-triton-v028` | `LLM inference CUDA Triton` | `20260908T005128477579Z-fd9bc3d3` | `2026-09-08T00:51:28.477579Z` | 20 | not currently in repo |
+| `2026-09-08-ai-compiler-runtime-v028` | `AI compiler runtime` | `20260908T005340535599Z-29700119` | `2026-09-08T00:53:40.535599Z` | 20 | not currently in repo |
+| `2026-09-08-quantization-kernels-v028` | `quantization kernels` | `20260908T005531156995Z-7dbcac45` | `2026-09-08T00:55:31.156995Z` | 20 | not currently in repo |
+| `2026-09-08-inference-infrastructure-v028` | `inference infrastructure` | `20260908T005721112409Z-09e4b189` | `2026-09-08T00:57:21.112409Z` | 20 | not currently in repo |
+| `2026-09-08-distributed-training-systems-v028` | `distributed training systems` | `20260908T033259838534Z-0675dccf` | `2026-09-08T03:32:59.838534Z` | 20 | [`cohort.json`](../benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json) |
 
-| Benchmark ID | Query | Source snapshot | As-of | Cohort |
-| --- | --- | --- | --- | ---: |
-| `2026-09-08-llm-inference-cuda-triton-v028` | `LLM inference CUDA Triton` | `20260908T005128477579Z-fd9bc3d3` | `2026-09-08T00:51:28.477579Z` | 20 |
-| `2026-09-08-ai-compiler-runtime-v028` | `AI compiler runtime` | `20260908T005340535599Z-29700119` | `2026-09-08T00:53:40.535599Z` | 20 |
-| `2026-09-08-quantization-kernels-v028` | `quantization kernels` | `20260908T005531156995Z-7dbcac45` | `2026-09-08T00:55:31.156995Z` | 20 |
-| `2026-09-08-inference-infrastructure-v028` | `inference infrastructure` | `20260908T005721112409Z-09e4b189` | `2026-09-08T00:57:21.112409Z` | 20 |
+The fifth current-model cohort was produced by the GitHub Actions prospective runner after the source-resilience fixes. The workflow reported `status: complete`, score version `0.2.8`, cohort size 20, and committed its immutable cohort evidence to `main`.
 
-The planned `distributed training systems` cohort was not frozen in the same batch because GitHub evidence became unavailable during collection. It remains pending rather than being filled with degraded or partial evidence.
+The first four v0.2.8 cohorts were frozen before automated artifact publication was added. Their freeze metadata is retained above, but their full local cohort files are **not claimed to be publicly inspectable** from this repository. They must not be reconstructed from later evidence merely to close that publication gap.
 
-The current-model cohorts are the relevant prospective test of the stricter v0.2.8 logic. The legacy v0.1.5 cohort remains useful as a historical model test, but its future result must not be used as direct validation of v0.2.8.
+Accordingly, distinguish these claims:
+
+- **Frozen:** five v0.2.8 cohorts have immutable freeze records.
+- **Publicly inspectable in this repository:** the distributed-training v0.2.8 cohort file is currently public; the earlier four full cohort files are not.
+- **Validated:** none. Outcome horizons have not matured.
+
+The five v0.2.8 cohorts contain 100 frozen cohort positions. This does **not** mean 100 unique people because the same person may occur in multiple query cohorts.
 
 ## 1. Freeze first, evaluate later
 
@@ -63,11 +70,7 @@ A frozen `cohort.json` must never be overwritten. Methodology changes require a 
 
 ## 2. Evaluation horizons
 
-Default horizons are:
-
-- 30 days
-- 90 days
-- 180 days
+Default horizons are 30, 90, and 180 days.
 
 Longer horizons may be added later, but headline comparisons must state the horizon explicitly.
 
@@ -94,6 +97,7 @@ Never:
 - recompute an old cohort with a newer score version
 - insert later GitHub activity into the original score
 - replace misses after the fact
+- reconstruct a missing historical cohort file from later data and present it as the original artifact
 - change the breakout definition after seeing results without creating a new benchmark version
 
 ## 5. Baselines
@@ -119,37 +123,21 @@ Benchmark v0.1 supports:
 
 Calibration and score-bucket analysis remain future extensions.
 
-## 7. Commands
+## 7. Automation and commands
 
-Freeze the latest local snapshot for a query:
+The prospective cohort workflow runs in GitHub Actions and publishes run evidence. Successful new cohort artifacts are committed to `main`; failed or incomplete runs must remain visible rather than silently producing degraded cohorts.
 
-```bash
-ghost-talent-benchmark freeze \
-  --query "LLM inference CUDA Triton" \
-  --benchmark-id "2026-09-08-cuda-triton-v01" \
-  --top-k 20
-```
-
-Freeze the default current-model prospective batch:
+Freeze the default current-model prospective batch locally when needed:
 
 ```bash
 ghost-talent-benchmark prospective-batch
 ```
 
-Retry only the pending distributed-training cohort:
-
-```bash
-ghost-talent-benchmark prospective-batch \
-  --query "distributed training systems"
-```
-
-Generated cohort files are immutable. Re-running an existing benchmark ID reuses the frozen cohort rather than rewriting it.
-
 Generate a future outcome-adjudication template:
 
 ```bash
 ghost-talent-benchmark outcome-template \
-  --benchmark-id "2026-09-08-llm-inference-cuda-triton-v028" \
+  --benchmark-id "2026-09-08-distributed-training-systems-v028" \
   --horizon-days 90
 ```
 
@@ -157,7 +145,7 @@ After outcomes are independently reviewed and saved as JSON, evaluate them:
 
 ```bash
 ghost-talent-benchmark evaluate \
-  --benchmark-id "2026-09-08-llm-inference-cuda-triton-v028" \
+  --benchmark-id "2026-09-08-distributed-training-systems-v028" \
   --outcomes path/to/outcomes-90d.json
 ```
 
@@ -165,6 +153,8 @@ ghost-talent-benchmark evaluate \
 
 Wins and misses stay published. A benchmark result is not considered evidence of predictive validity unless the frozen cohort, outcome rubric, evaluation horizon, and baseline comparison are all available for inspection.
 
+Documentation must distinguish **frozen**, **publicly inspectable**, and **validated**. A tooling change, successful command, or frozen metadata record is not by itself evidence of predictive validity.
+
 The correct current public wording is:
 
-> **Five prospective cohorts are frozen in total — one under v0.1.5 and four under v0.2.8 — but outcome results have not matured yet.**
+> **Six prospective cohorts are frozen in total — one under v0.1.5 and five under v0.2.8. The newest v0.2.8 cohort is publicly inspectable in the repository; the four earlier v0.2.8 full cohort files are not currently public. No outcome horizon has matured, so predictive validity is not established.**
