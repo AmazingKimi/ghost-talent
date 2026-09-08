@@ -6,6 +6,25 @@ The benchmark exists to test a falsifiable claim:
 
 It is not a leaderboard for hiring decisions. It is a longitudinal research protocol over public technical evidence.
 
+## Current benchmark status
+
+The first real prospective cohort has already been frozen.
+
+- benchmark ID: `2026-09-08-cuda-triton-v01`
+- query: `LLM inference CUDA Triton`
+- source snapshot ID: `20260907T162245054462Z-b36e731d`
+- snapshot as-of: `2026-09-07T16:22:45.054462Z`
+- frozen at: `2026-09-07T16:22:56.618965Z`
+- cohort size: 20
+- score version: `0.1.5`
+- evaluation horizons: 30 / 90 / 180 days
+- outcome definition version: `0.1`
+- status: `frozen — outcomes not yet mature`
+
+This means the prospective experiment is running, but there is **not yet a benchmark result**. Precision@K, Breakout Lead Time, and baseline comparisons must wait until the corresponding outcome windows are adjudicated.
+
+The cohort is immutable. It must not be recomputed using score version 0.2.7 or any later methodology.
+
 ## 1. Freeze first, evaluate later
 
 Every benchmark cohort is created from an immutable Scout snapshot. The cohort stores:
@@ -121,3 +140,7 @@ ghost-talent-benchmark evaluate \
 ## 8. Publication rule
 
 Wins and misses stay published. A benchmark result is not considered evidence of predictive validity unless the frozen cohort, outcome rubric, evaluation horizon, and baseline comparison are all available for inspection.
+
+The correct current public wording is:
+
+> **The first real prospective cohort is frozen; outcome results have not matured yet.**
