@@ -6,7 +6,7 @@ It is designed for **early technical talent discovery**, not résumé screening,
 
 ## Current version
 
-Active score version: **0.2.7**.
+Active score version: **0.2.8**.
 
 The model is explicit and versioned. Its weights and thresholds are research hypotheses that require empirical validation; they are not learned probabilities.
 
@@ -20,35 +20,51 @@ All dimensions are normalized to 0–100.
 
 ## External Validation
 
-External Validation is separate from self-controlled activity. v0.2.7 only gives strong upstream credit to evidence that survives additional checks:
+External Validation is separate from self-controlled activity.
+
+v0.2.8 changes a core assumption: **a curated recognized-upstream list is no longer a mandatory gateway to an emerging recommendation.**
+
+The system now inspects a bounded mix of external PRs across:
+
+- curated recognized upstream repositories,
+- recent external repositories outside that list,
+- and additional recent external PRs when inspection budget allows.
+
+A non-curated project can produce credible external evidence when an inspected PR is substantive and has at least one of:
+
+- changed-file verified core implementation work,
+- owner/member approval from the external repository.
+
+This produces a `verified_external_project` signal. Curated upstream status remains a **context bonus**, not proof of quality and not a mandatory EARLY gate.
+
+Current external signals include:
 
 - external merged PR discovery,
-- substantive-change gate for inspected upstream PRs,
-- recognized upstream repository context,
+- substantive-change gate,
+- verified external-project PRs,
+- curated recognized-upstream context,
 - changed-file verified core implementation paths,
 - owner/member-approved reviews,
 - recency of external evidence.
 
-`COLLABORATOR` review status is not treated as maintainer acceptance. Documentation, tests, examples, CI and other non-core paths are excluded from core-path evidence. A recognized repository name alone is insufficient for strong technical credit.
+`COLLABORATOR` review status is not treated as maintainer acceptance. Documentation, tests, examples, CI and other non-core paths are excluded from core-path evidence. A repository name alone is never sufficient for strong technical credit.
 
 ## Momentum
 
-Momentum now counts only a bounded set of development-relevant GitHub public event types rather than stars, forks and general issue activity.
+Momentum counts only a bounded set of development-relevant GitHub public event types rather than stars, forks and general issue activity.
 
-Important v0.2.7 rules:
+Important rules:
 
 - no prior observable history means acceleration is **not inferred**,
 - insufficient history caps Momentum and blocks EARLY / STRONG,
 - a 100-event-truncated public-event sample is reported and conservatively capped,
 - activity acceleration is not treated as technical improvement.
 
-This directly addresses the false-positive pattern where a newly active account, star-heavy account, or short burst of public activity could look like a breakout trajectory.
-
 ## Visibility Gap
 
 Current visibility is approximated using log-scaled GitHub followers. Followers are a weak proxy for market visibility, so Visibility Gap is a supporting signal rather than proof of under-recognition.
 
-v0.2.7 reduces the follower proxy's saturation rate and lowers the degree to which Capability is effectively counted twice through the gap calculation. This remains an unresolved research dimension and must be tested empirically.
+The follower proxy has reduced weight and slower saturation than the original model, but this remains an unresolved research dimension and must be tested empirically.
 
 ## Evidence Mix
 
@@ -66,7 +82,9 @@ Radar is a prioritization score, not a recommendation by itself.
 
 **STRONG SIGNAL** requires Radar >= 75, External Validation >= 70, Evidence Confidence >= 65, low current visibility, sufficient momentum history, and recent same-PR owner/member-approved core-path evidence.
 
-**EARLY SIGNAL** requires Radar >= 65, External Validation >= 50, Evidence Confidence >= 55, low current visibility, sufficient momentum history, recent recognized-upstream evidence, plus recent owner/member approval or changed-file core-path evidence.
+**EARLY SIGNAL** requires Radar >= 65, External Validation >= 50, Evidence Confidence >= 55, low current visibility, sufficient momentum history, and recent `verified_external_project` evidence with recent core-path or owner/member approval support.
+
+A curated upstream repository is **not required** for EARLY SIGNAL in v0.2.8.
 
 **WATCH** is used when internal capability or Radar is interesting but the stronger external-validation gates are not satisfied.
 
@@ -79,12 +97,12 @@ Radar is a prioritization score, not a recommendation by itself.
 1. High GitHub activity alone cannot create EARLY or STRONG.
 2. Self-owned repository activity is not external validation.
 3. A merged PR is not automatically a substantive contribution.
-4. A recognized upstream repository is context, not proof of technical depth.
-5. Missing history does not become synthetic acceleration.
-6. GitHub stars, forks and general issue activity do not drive Momentum.
-7. A famous strong candidate should not be mislabeled as emerging.
-8. Missing external evidence caps recommendation confidence.
-9. Noise can block recommendation even when raw activity is high.
+4. A curated upstream repository is context, not proof of technical depth.
+5. A non-curated external project can count when the actual PR evidence is strong enough.
+6. Missing history does not become synthetic acceleration.
+7. GitHub stars, forks and general issue activity do not drive Momentum.
+8. A famous strong candidate should not be mislabeled as emerging.
+9. Missing external evidence caps recommendation confidence.
 10. Historical and recent evidence are not treated as equivalent.
 
 ## Known weaknesses
@@ -95,8 +113,8 @@ The current model still has unresolved weaknesses:
 - GitHub followers remain a rough visibility proxy.
 - thresholds are not calibrated probabilities.
 - public GitHub evidence undercovers excellent closed-source engineers.
-- recognized-upstream coverage is incomplete and partly curated.
-- PR inspection is bounded, not a complete code review.
+- external PR inspection is bounded, not a complete code review.
+- the current mixed inspection budget can still miss important PRs.
 - GitHub public-event history is incomplete and can be truncated.
 - OpenAlex cross-source identity coverage is conservative and sparse.
 
@@ -117,7 +135,9 @@ These are sanity checks, not predictive-validity evidence.
 
 Every score carries a `score_version`. Any material change to weights, normalization, evidence semantics or recommendation gates creates a new score version.
 
-The first real benchmark cohort remains frozen on score version `0.1.5` and must never be recomputed using v0.2.7.
+The first real benchmark cohort remains frozen on score version `0.1.5` and must never be recomputed using v0.2.8.
+
+That cohort can only validate the old frozen model. Therefore a **new prospective cohort must be frozen under v0.2.8** so future outcome data can directly test the current model.
 
 Retrospective validation may only use evidence proven to have been observable at the historical `as_of_date`; current follower counts or current repository state may not be injected into historical rankings.
 
