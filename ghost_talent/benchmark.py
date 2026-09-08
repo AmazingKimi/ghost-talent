@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -10,6 +11,14 @@ ROOT = Path(__file__).resolve().parent.parent
 BENCHMARK_SCHEMA_VERSION = "0.1"
 OUTCOME_DEFINITION_VERSION = "0.1"
 DEFAULT_HORIZONS = [30, 90, 180]
+CURRENT_SCORE_VERSION = "0.2.8"
+DEFAULT_PROSPECTIVE_QUERIES = [
+    "LLM inference CUDA Triton",
+    "AI compiler runtime",
+    "distributed training systems",
+    "quantization kernels",
+    "inference infrastructure",
+]
 
 
 def _slugify(value: str) -> str:
@@ -39,6 +48,10 @@ def _baseline_values(row: dict[str, Any]) -> dict[str, float]:
     visibility = drivers.get("visibility") or {}
     capability = drivers.get("capability") or {}
     top_repo = capability.get("top_repository") or {}
+    if not top_repo:
+        top_repositories = capability.get("top_repositories") or []
+        if isinstance(top_repositories, list) and top_repositories:
+            top_repo = top_repositories[0] or {}
     return {
         "followers": float(visibility.get("followers") or 0),
         "stars": float(top_repo.get("stars") or 0),
@@ -52,11 +65,19 @@ def freeze_cohort(
     benchmark_id: str,
     top_k: int = 20,
     horizons: list[int] | None = None,
+    required_score_version: str | None = None,
 ) -> dict[str, Any]:
     _, snapshot = _latest_snapshot(root, query)
     ranking = list(snapshot.get("ranking") or [])[: max(1, top_k)]
     if not ranking:
         raise ValueError("Cannot freeze an empty benchmark cohort")
+
+    observed_versions = {str(row.get("score_version")) for row in ranking if row.get("score_version")}
+    if required_score_version and observed_versions != {required_score_version}:
+        raise ValueError(
+            f"Refusing to freeze {benchmark_id}: expected only score version "
+            f"{required_score_version}, got {sorted(observed_versions)}"
+        )
 
     benchmark_dir = root / "benchmarks" / benchmark_id
     benchmark_dir.mkdir(parents=True, exist_ok=True)
@@ -92,7 +113,7 @@ def freeze_cohort(
         "as_of_date": snapshot.get("observed_at"),
         "frozen_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "cohort_size": len(members),
-        "score_versions": snapshot.get("score_versions", []),
+        "score_versions": sorted(observed_versions),
         "evaluation_horizons_days": horizons or DEFAULT_HORIZONS,
         "outcome_definition_version": OUTCOME_DEFINITION_VERSION,
         "members": members,
@@ -101,6 +122,57 @@ def freeze_cohort(
         json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
         handle.write("\n")
     return payload
+
+
+async def prospective_batch(
+    root: Path,
+    queries: list[str] | None = None,
+    top_k: int = 20,
+    score_version: str = CURRENT_SCORE_VERSION,
+) -> dict[str, Any]:
+    from .scout import scout
+    from .snapshot import save_snapshot
+
+    selected = queries or DEFAULT_PROSPECTIVE_QUERIES
+    date_prefix = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    cohorts = []
+    for query in selected:
+        scout_result = await scout(query, limit=top_k)
+        github_status = (scout_result.get("sources") or {}).get("github", {}).get("status")
+        results = list(scout_result.get("results") or [])
+        if github_status != "ok":
+            raise RuntimeError(f"GitHub source is not healthy for {query}: {github_status}")
+        if len(results) < top_k:
+            raise RuntimeError(f"Refusing to freeze undersized cohort for {query}: {len(results)} < {top_k}")
+        versions = {str(row.get("score_version")) for row in results if row.get("score_version")}
+        if versions != {score_version}:
+            raise RuntimeError(f"Refusing to freeze {query}: expected {score_version}, got {sorted(versions)}")
+
+        snapshot = save_snapshot(root, query, results)
+        benchmark_id = f"{date_prefix}-{_slugify(query)[:40]}-v028"
+        cohort = freeze_cohort(
+            root,
+            query,
+            benchmark_id,
+            top_k=top_k,
+            required_score_version=score_version,
+        )
+        cohorts.append({
+            "benchmark_id": benchmark_id,
+            "query": query,
+            "source_snapshot_id": cohort.get("source_snapshot_id"),
+            "as_of_date": cohort.get("as_of_date"),
+            "cohort_size": cohort.get("cohort_size"),
+            "score_versions": cohort.get("score_versions"),
+            "snapshot_path": snapshot.get("path"),
+        })
+
+    return {
+        "status": "frozen",
+        "score_version": score_version,
+        "cohort_count": len(cohorts),
+        "cohorts": cohorts,
+    }
 
 
 def outcome_template(root: Path, benchmark_id: str, horizon_days: int) -> dict[str, Any]:
@@ -189,13 +261,19 @@ def evaluate(root: Path, benchmark_id: str, outcomes_path: Path, ks: list[int] |
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Ghost Talent Benchmark v0.1")
+    parser = argparse.ArgumentParser(description="Ghost Talent Benchmark")
     sub = parser.add_subparsers(dest="command", required=True)
 
     freeze = sub.add_parser("freeze", help="Freeze the latest local snapshot into an immutable benchmark cohort")
     freeze.add_argument("--query", required=True)
     freeze.add_argument("--benchmark-id", required=True)
     freeze.add_argument("--top-k", type=int, default=20)
+    freeze.add_argument("--require-score-version")
+
+    batch = sub.add_parser("prospective-batch", help="Scout and freeze the default current-model prospective cohorts")
+    batch.add_argument("--top-k", type=int, default=20)
+    batch.add_argument("--score-version", default=CURRENT_SCORE_VERSION)
+    batch.add_argument("--query", action="append", dest="queries")
 
     template = sub.add_parser("outcome-template", help="Create an adjudication template for a frozen cohort")
     template.add_argument("--benchmark-id", required=True)
@@ -207,7 +285,15 @@ def main() -> None:
 
     args = parser.parse_args()
     if args.command == "freeze":
-        result = freeze_cohort(ROOT, args.query, args.benchmark_id, args.top_k)
+        result = freeze_cohort(
+            ROOT,
+            args.query,
+            args.benchmark_id,
+            args.top_k,
+            required_score_version=args.require_score_version,
+        )
+    elif args.command == "prospective-batch":
+        result = asyncio.run(prospective_batch(ROOT, args.queries, args.top_k, args.score_version))
     elif args.command == "outcome-template":
         result = outcome_template(ROOT, args.benchmark_id, args.horizon_days)
     else:
