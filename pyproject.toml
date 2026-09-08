@@ -1,6 +1,6 @@
 [project]
 name = "ghost-talent"
-version = "0.2.0"
+version = "0.3.3"
 description = "Evidence-grounded discovery for emerging AI engineers and researchers"
 requires-python = ">=3.10"
 dependencies = [
