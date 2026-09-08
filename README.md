@@ -99,17 +99,39 @@ The public cohort is [`benchmarks/2026-09-08-distributed-training-systems-v028/c
 
 Protocol v2 requires, before any future headline predictive-validity claim: a full frozen artifact, SHA-256 commitment at freeze time, a 90-day primary horizon, blind adjudication, member-level evidence, simple baselines, an eligible same-population random control, and deduplicated pooled statistics where pooling is used. Null/negative results must be published as prominently as positive results.
 
+**Historical commitment note:** the existing 2026-09-08 public cohort has a current inspectable SHA-256 but no SHA-256 commitment that was published at its original freeze time. That historical fact cannot be repaired retroactively and is intentionally reported as missing. Future protocol-v2 freezes must publish their commitment at T0.
+
 Operational registry: [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
 
 ## Credibility work before outcomes mature
 
 Current credibility work includes adversarial/anti-gaming tests, false-positive invariants, component-correlation analysis, identity audit protocol, retrospective-validation rules, and automated GitHub Actions checks. These are sanity checks, **not substitutes for predictive validation**.
 
+CI runs the complete pytest suite on Ubuntu, macOS, and Windows using Python 3.10 and 3.12. This verifies Python-level cross-platform behavior; launcher behavior should still be treated separately from real-device UX acceptance.
+
 See [`docs/ADVERSARIAL_TESTS.md`](docs/ADVERSARIAL_TESTS.md), [`docs/CREDIBILITY_PHASE.md`](docs/CREDIBILITY_PHASE.md), and [`docs/RETROSPECTIVE_VALIDATION.md`](docs/RETROSPECTIVE_VALIDATION.md).
 
 ## Run locally
 
 Python 3.10+.
+
+### macOS
+
+Double-click `start.command`, or run:
+
+```bash
+./start.command
+```
+
+### Windows
+
+Double-click `start.bat`, or run it from Command Prompt:
+
+```bat
+start.bat
+```
+
+### Manual setup
 
 ```bash
 python3 -m venv .venv
@@ -119,15 +141,16 @@ pip install -e .
 python -m ghost_talent.app
 ```
 
-Then open `http://127.0.0.1:8765`. On macOS, `./start.command` is available as a convenience launcher.
+On Windows manual setup, activate with `.venv\Scripts\activate.bat` instead of the Unix `source` command. Then open `http://127.0.0.1:8765`.
 
-A GitHub token is optional for lightweight public discovery, but **full External Validation and recommendation-quality output require authenticated GitHub access**. Keep tokens local and never commit them.
+A GitHub token is optional for lightweight public discovery, but **full External Validation and recommendation-quality output require authenticated GitHub access**. Keep tokens local and never commit them. The local UI also supports GitHub OAuth Device Flow through Settings → GitHub connection.
 
 ## Known limitations
 
 - no mature predictive-validity result yet,
 - only 20/100 v0.2.8 recorded positions are member-level public here,
 - the four unpublished v0.2.8 member artifacts have no public pre-outcome hash commitment at v2 adoption time,
+- the existing public v0.2.8 cohort has no retroactively valid freeze-time SHA-256 commitment; only its current artifact hash can be reported,
 - the existing v0.2.8 cohorts lack synchronized random controls and are not temporal replications,
 - protocol v2 is currently stricter than the benchmark software; several enforcement features remain to be implemented before a v2 headline claim,
 - deterministic weights and thresholds remain uncalibrated hypotheses,
