@@ -129,6 +129,8 @@ async def prospective_batch(
     queries: list[str] | None = None,
     top_k: int = 20,
     score_version: str = CURRENT_SCORE_VERSION,
+    max_retries: int = 2,
+    retry_delay_seconds: float = 65.0,
 ) -> dict[str, Any]:
     from .scout import scout
     from .snapshot import save_snapshot
@@ -136,20 +138,63 @@ async def prospective_batch(
     selected = queries or DEFAULT_PROSPECTIVE_QUERIES
     date_prefix = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     cohorts = []
+    skipped = []
+
     for query in selected:
-        scout_result = await scout(query, limit=top_k)
-        github_status = (scout_result.get("sources") or {}).get("github", {}).get("status")
-        results = list(scout_result.get("results") or [])
+        benchmark_id = f"{date_prefix}-{_slugify(query)[:40]}-v028"
+        cohort_path = root / "benchmarks" / benchmark_id / "cohort.json"
+        if cohort_path.exists():
+            cohort = _load_json(cohort_path)
+            cohorts.append({
+                "benchmark_id": benchmark_id,
+                "query": query,
+                "status": "already_frozen",
+                "source_snapshot_id": cohort.get("source_snapshot_id"),
+                "as_of_date": cohort.get("as_of_date"),
+                "cohort_size": cohort.get("cohort_size"),
+                "score_versions": cohort.get("score_versions"),
+            })
+            continue
+
+        scout_result = None
+        github_status = None
+        for attempt in range(max_retries + 1):
+            scout_result = await scout(query, limit=top_k)
+            github_status = (scout_result.get("sources") or {}).get("github", {}).get("status")
+            if github_status == "ok":
+                break
+            if github_status == "rate_limited" and attempt < max_retries:
+                await asyncio.sleep(retry_delay_seconds)
+                continue
+            break
+
         if github_status != "ok":
-            raise RuntimeError(f"GitHub source is not healthy for {query}: {github_status}")
+            skipped.append({
+                "query": query,
+                "benchmark_id": benchmark_id,
+                "reason": f"github_{github_status or 'unknown'}",
+            })
+            continue
+
+        results = list((scout_result or {}).get("results") or [])
         if len(results) < top_k:
-            raise RuntimeError(f"Refusing to freeze undersized cohort for {query}: {len(results)} < {top_k}")
+            skipped.append({
+                "query": query,
+                "benchmark_id": benchmark_id,
+                "reason": f"undersized_cohort:{len(results)}<{top_k}",
+            })
+            continue
+
         versions = {str(row.get("score_version")) for row in results if row.get("score_version")}
         if versions != {score_version}:
-            raise RuntimeError(f"Refusing to freeze {query}: expected {score_version}, got {sorted(versions)}")
+            skipped.append({
+                "query": query,
+                "benchmark_id": benchmark_id,
+                "reason": f"score_version_mismatch:{sorted(versions)}",
+            })
+            continue
 
         snapshot = save_snapshot(root, query, results)
-        benchmark_id = f"{date_prefix}-{_slugify(query)[:40]}-v028"
         cohort = freeze_cohort(
             root,
             query,
@@ -160,6 +205,7 @@ async def prospective_batch(
         cohorts.append({
             "benchmark_id": benchmark_id,
             "query": query,
+            "status": "frozen",
             "source_snapshot_id": cohort.get("source_snapshot_id"),
             "as_of_date": cohort.get("as_of_date"),
             "cohort_size": cohort.get("cohort_size"),
@@ -167,11 +213,16 @@ async def prospective_batch(
             "snapshot_path": snapshot.get("path"),
         })
 
+        if query != selected[-1] and retry_delay_seconds > 0:
+            await asyncio.sleep(min(retry_delay_seconds, 15.0))
+
     return {
-        "status": "frozen",
+        "status": "complete" if not skipped else "partial",
         "score_version": score_version,
         "cohort_count": len(cohorts),
+        "skipped_count": len(skipped),
         "cohorts": cohorts,
+        "skipped": skipped,
     }
 
 
@@ -274,6 +325,8 @@ def main() -> None:
     batch.add_argument("--top-k", type=int, default=20)
     batch.add_argument("--score-version", default=CURRENT_SCORE_VERSION)
     batch.add_argument("--query", action="append", dest="queries")
+    batch.add_argument("--max-retries", type=int, default=2)
+    batch.add_argument("--retry-delay-seconds", type=float, default=65.0)
 
     template = sub.add_parser("outcome-template", help="Create an adjudication template for a frozen cohort")
     template.add_argument("--benchmark-id", required=True)
@@ -293,7 +346,16 @@ def main() -> None:
             required_score_version=args.require_score_version,
         )
     elif args.command == "prospective-batch":
-        result = asyncio.run(prospective_batch(ROOT, args.queries, args.top_k, args.score_version))
+        result = asyncio.run(
+            prospective_batch(
+                ROOT,
+                args.queries,
+                args.top_k,
+                args.score_version,
+                args.max_retries,
+                args.retry_delay_seconds,
+            )
+        )
     elif args.command == "outcome-template":
         result = outcome_template(ROOT, args.benchmark_id, args.horizon_days)
     else:
