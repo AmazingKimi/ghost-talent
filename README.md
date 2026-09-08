@@ -18,9 +18,9 @@ Ghost Talent asks:
 
 Ghost Talent is an **experimental research and discovery system**. It does **not** yet have mature predictive-validity results and does not claim to outperform professional sourcing, technical review, or simple baselines.
 
-Six prospective cohorts are currently frozen: one legacy cohort under score version `0.1.5` and five current-model cohorts under `0.2.8`. The five v0.2.8 cohorts contain 20 frozen positions each (100 cohort positions in total; candidates may overlap across cohorts). No 30 / 90 / 180-day outcome horizon has matured yet.
+Six prospective cohorts have freeze records: one legacy cohort under score version `0.1.5` and five current-model cohorts under `0.2.8`. **For the current v0.2.8 model, one complete cohort (20 positions) is publicly inspectable in this repository now. Four additional v0.2.8 cohorts (80 positions) are frozen with immutable metadata recorded in [`docs/BENCHMARK.md`](docs/BENCHMARK.md), but their full cohort files are not published here and therefore those 80 positions are not independently inspectable from this repository.** Candidates may overlap across cohorts. No 30 / 90 / 180-day outcome horizon has matured yet.
 
-The legacy cohort can validate only its historical model. The five v0.2.8 cohorts are the prospective test of current behavior. Until outcomes mature, the project should be judged as a falsifiable early-talent hypothesis engine, not a proven prediction system.
+The legacy cohort can validate only its historical model. The five v0.2.8 freeze records define the prospective test of current behavior, but only the published 20-position cohort currently supports repository-level member-by-member inspection. Until outcomes mature, the project should be judged as a falsifiable early-talent hypothesis engine, not a proven prediction system.
 
 ## What is different
 
@@ -92,14 +92,14 @@ Cross-source identity uncertainty remains uncertainty. A name match is not treat
 
 Frozen prospective cohorts currently visible in the project record:
 
-| Benchmark ID | Query | Snapshot | Score version | Size |
-| --- | --- | --- | --- | ---: |
-| `2026-09-08-cuda-triton-v01` | `LLM inference CUDA Triton` | `20260907T162245054462Z-b36e731d` | `0.1.5` | 20 |
-| `2026-09-08-llm-inference-cuda-triton-v028` | `LLM inference CUDA Triton` | `20260908T005128477579Z-fd9bc3d3` | `0.2.8` | 20 |
-| `2026-09-08-ai-compiler-runtime-v028` | `AI compiler runtime` | `20260908T005340535599Z-29700119` | `0.2.8` | 20 |
-| `2026-09-08-quantization-kernels-v028` | `quantization kernels` | `20260908T005531156995Z-7dbcac45` | `0.2.8` | 20 |
-| `2026-09-08-inference-infrastructure-v028` | `inference infrastructure` | `20260908T005721112409Z-09e4b189` | `0.2.8` | 20 |
-| `2026-09-08-distributed-training-systems-v028` | `distributed training systems` | `20260908T033259838534Z-0675dccf` | `0.2.8` | 20 |
+| Benchmark ID | Query | Snapshot | Score version | Size | Full cohort public here? |
+| --- | --- | --- | --- | ---: | --- |
+| `2026-09-08-cuda-triton-v01` | `LLM inference CUDA Triton` | `20260907T162245054462Z-b36e731d` | `0.1.5` | 20 | No |
+| `2026-09-08-llm-inference-cuda-triton-v028` | `LLM inference CUDA Triton` | `20260908T005128477579Z-fd9bc3d3` | `0.2.8` | 20 | No |
+| `2026-09-08-ai-compiler-runtime-v028` | `AI compiler runtime` | `20260908T005340535599Z-29700119` | `0.2.8` | 20 | No |
+| `2026-09-08-quantization-kernels-v028` | `quantization kernels` | `20260908T005531156995Z-7dbcac45` | `0.2.8` | 20 | No |
+| `2026-09-08-inference-infrastructure-v028` | `inference infrastructure` | `20260908T005721112409Z-09e4b189` | `0.2.8` | 20 | No |
+| `2026-09-08-distributed-training-systems-v028` | `distributed training systems` | `20260908T033259838534Z-0675dccf` | `0.2.8` | 20 | **Yes** |
 
 The distributed-training cohort is committed publicly under [`benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json`](benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json). The earlier four v0.2.8 cohorts were frozen locally before automated artifact publication was added; their immutable metadata is recorded in [`docs/BENCHMARK.md`](docs/BENCHMARK.md), but their full cohort files are not claimed to be public in this repository.
 
@@ -152,7 +152,7 @@ A GitHub token is optional for lightweight public discovery, but **full External
 
 - no mature predictive-validity result yet,
 - the legacy frozen cohort validates an older model rather than current v0.2.8,
-- four early v0.2.8 cohort files are not yet public even though their freeze metadata is recorded,
+- only one complete v0.2.8 cohort (20 positions) is publicly inspectable in this repository; four additional frozen v0.2.8 cohorts (80 positions) currently have public metadata but not public member files,
 - deterministic weights and thresholds remain uncalibrated hypotheses,
 - GitHub followers are a weak visibility proxy,
 - GitHub public-event history is incomplete and can truncate at 100 events,
