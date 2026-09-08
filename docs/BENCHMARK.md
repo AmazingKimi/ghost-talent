@@ -12,6 +12,8 @@ Ghost Talent currently has **six frozen prospective cohorts**: one legacy cohort
 
 No cohort has mature outcome results yet. Predictive validity is therefore **not established**.
 
+For v0.2.8, **20/100 frozen cohort positions are currently member-by-member inspectable in this repository**. The remaining 80 positions have immutable freeze metadata recorded here but their original full cohort files are not currently public. Positions are not unique people: a candidate may appear in more than one cohort.
+
 ### Legacy cohort — score version 0.1.5
 
 - benchmark ID: `2026-09-08-cuda-triton-v01`
@@ -47,8 +49,6 @@ Accordingly, distinguish these claims:
 - **Publicly inspectable in this repository:** the distributed-training v0.2.8 cohort file is currently public; the earlier four full cohort files are not.
 - **Validated:** none. Outcome horizons have not matured.
 
-The five v0.2.8 cohorts contain 100 frozen cohort positions. This does **not** mean 100 unique people because the same person may occur in multiple query cohorts.
-
 ## 1. Freeze first, evaluate later
 
 Every benchmark cohort is created from an immutable Scout snapshot. The cohort stores:
@@ -68,23 +68,43 @@ Every benchmark cohort is created from an immutable Scout snapshot. The cohort s
 
 A frozen `cohort.json` must never be overwritten. Methodology changes require a new benchmark ID/version.
 
-## 2. Evaluation horizons
+The outcome rubric is part of the benchmark version, not something to be chosen after results are observed. Existing cohorts retain `outcome_definition_version: 0.1`. Any substantive change to the outcome definition creates a new outcome-definition version and **cannot be retroactively used as the headline evaluation of cohorts frozen under v0.1**.
+
+## 2. Evaluation horizons and execution-time dependence
 
 Default horizons are 30, 90, and 180 days.
 
 Longer horizons may be added later, but headline comparisons must state the horizon explicitly.
 
-## 3. Breakout Outcome v0.1
+The five v0.2.8 cohorts were frozen in one execution window on 2026-09-08. They are **not independent replications across time**. Shared API state, source availability, or pipeline defects could affect several cohorts simultaneously. They test query-domain breadth under one execution period, not temporal replication.
 
-A candidate may be marked `breakout=true` only when later public evidence supports a meaningful technical-impact transition. Accepted outcome types include:
+Future benchmark rounds intended as replication must be frozen on different dates/execution sessions. Results from those later rounds must be reported separately before any pooled cross-time claim is made.
 
-- `maintainer_or_core_role` — became a maintainer/core contributor in an important public project
-- `major_oss_contribution` — produced clearly substantive public technical work with externally visible adoption or responsibility
-- `project_breakout` — created or became a key contributor to a project that achieved substantial technical adoption
-- `research_breakout` — later research impact became materially stronger and is supported by public evidence
-- `public_role_transition` — a publicly verifiable move into a technically significant AI lab/startup/team, used only as one observable outcome rather than a hiring-quality judgment
+## 3. Breakout Outcome v0.1 — pre-registered adjudication rule
 
-Every positive outcome must keep at least one public evidence URL and, where possible, a breakout date. Ambiguous cases remain unadjudicated rather than being forced positive or negative.
+Outcome Definition v0.1 is frozen for the existing cohorts as of this protocol revision and must not be loosened after inspecting candidate outcomes.
+
+A candidate may be marked `breakout=true` only when **new public evidence after the cohort `as_of_date`** establishes at least one of the following pre-registered outcome types:
+
+- `maintainer_or_core_role` — public project records show the candidate newly obtained maintainer/core-committer responsibility after T0;
+- `major_oss_contribution` — after T0, the candidate produced a substantive implementation contribution accepted into an external project, with public evidence of merge/acceptance and technical scope;
+- `project_breakout` — after T0, the candidate created or became a key contributor to a public technical project that subsequently shows externally observable adoption/responsibility evidence;
+- `research_breakout` — after T0, a research contribution receives a materially new public impact signal, with attributable public evidence;
+- `public_role_transition` — after T0, a publicly verifiable move into a technically significant AI research/engineering role, treated only as an observable transition rather than a hiring-quality judgment.
+
+A positive adjudication requires:
+
+1. at least one public evidence URL;
+2. evidence attributable to the same candidate under the benchmark's identity rules;
+3. evidence whose relevant event occurred after T0;
+4. an `outcome_type` from the list above;
+5. a breakout date when the public evidence permits one.
+
+Evidence that merely restates information already observable at T0 is **not** a breakout. Ambiguous identity, ambiguous timing, or ambiguous technical significance remains `unadjudicated`; it must not be forced into a positive result.
+
+A candidate is a **miss at a stated horizon** only when the horizon has elapsed, the candidate has been reviewed under this same v0.1 rubric, and no qualifying post-T0 breakout evidence was found. Missing review is not a miss and is not a win.
+
+The rubric intentionally uses categorical public-impact events rather than a single follower threshold. This creates adjudication judgment; therefore future published outcome files must retain the evidence URLs and outcome type so a third party can challenge each label.
 
 The benchmark must not use sensitive personal attributes.
 
@@ -94,13 +114,29 @@ The frozen ranking may use only information present in the original snapshot. La
 
 Never:
 
-- recompute an old cohort with a newer score version
-- insert later GitHub activity into the original score
-- replace misses after the fact
-- reconstruct a missing historical cohort file from later data and present it as the original artifact
-- change the breakout definition after seeing results without creating a new benchmark version
+- recompute an old cohort with a newer score version;
+- insert later GitHub activity into the original score;
+- replace misses after the fact;
+- reconstruct a missing historical cohort file from later data and present it as the original artifact;
+- change the breakout definition after seeing results and apply it retroactively to improve the headline result;
+- promote an outcome signal that was already observable at T0 into a post-T0 breakout.
 
-## 5. Baselines
+If Outcome Definition v0.1 later proves too subjective or flawed, that failure must be reported. A revised definition belongs to a new benchmark/outcome version rather than rewriting the existing test.
+
+## 5. Cohort overlap and aggregation rule
+
+Cohort positions are **not statistically independent observations**. The same person may appear in multiple query cohorts, and the legacy cohort may overlap with v0.2.8 cohorts.
+
+Therefore two different result types must remain separate:
+
+1. **Per-cohort metrics.** Precision@K is computed within each frozen query cohort. A person's outcome may legitimately affect each cohort in which that person was originally ranked, because the metric answers a query-specific ranking question. These per-cohort numbers must not be summed and described as independent predictions.
+2. **Cross-cohort headline metrics.** Any pooled person-level breakout rate, count, or model-level headline across multiple cohorts must deduplicate candidates by stable subject identity before calculation. One real-world breakout may count at most once in a pooled unique-person metric. The publication must report both total cohort positions and unique candidate count.
+
+Cross-version comparison follows the same rule. A candidate appearing in both v0.1.5 and v0.2.8 cannot be presented as two independent breakout events in a pooled comparison. Version-specific cohort results may still be shown, but overlap must be disclosed and a deduplicated sensitivity view must accompany any cross-version conclusion.
+
+The current evaluator computes a **single cohort at a time**. It does not yet implement pooled multi-cohort aggregation. Until a deduplicating pooled evaluator exists, Ghost Talent must not publish a pooled Precision@K or pooled breakout rate across the five v0.2.8 cohorts.
+
+## 6. Baselines
 
 Ghost Talent must be compared with simple alternatives available at freeze time:
 
@@ -110,9 +146,9 @@ Ghost Talent must be compared with simple alternatives available at freeze time:
 
 These baselines are intentionally simple. If Ghost Talent cannot beat them reliably, the predictive-validity claim is not established.
 
-## 6. Metrics
+## 7. Metrics
 
-Benchmark v0.1 supports:
+Benchmark v0.1 supports per-cohort:
 
 - Precision@5
 - Precision@10
@@ -121,9 +157,24 @@ Benchmark v0.1 supports:
 - mean Breakout Lead Time for positive outcomes
 - the same Precision@K calculations for followers, stars, and raw contributions
 
-Calibration and score-bucket analysis remain future extensions.
+No pooled multi-cohort metric is currently supported or claimed. Calibration, uncertainty intervals, unique-person pooled analysis, and score-bucket analysis remain future extensions.
 
-## 7. Automation and commands
+## 8. Publication and missing-artifact rule
+
+For cohorts whose full frozen file is public, wins and misses must stay public together with the frozen cohort, rubric version, horizon, evidence URLs, and baseline comparison.
+
+For the four v0.2.8 cohorts whose original full files are currently missing from the public repository, Ghost Talent makes a stronger anti-selection commitment:
+
+- if the original frozen files can later be recovered byte-for-byte from the original local artifacts/backups, they will be published with provenance and hashes;
+- they will **not** be reconstructed from later API data;
+- if they cannot be recovered, they remain permanently classified as `metadata-only / not independently inspectable`;
+- their future outcomes may be reported as exploratory records, but **must not be included in headline predictive-validity claims or pooled benchmark metrics that imply independent public verification**.
+
+This rule prevents selective publication from turning missing artifacts into an advantage. A good-looking result does not upgrade a metadata-only cohort into validated evidence.
+
+All future prospective cohorts created after automated publication support must publish their full frozen cohort artifact at freeze time. A run that fails to publish the artifact is not eligible for the publicly verifiable benchmark set.
+
+## 9. Automation and commands
 
 The prospective cohort workflow runs in GitHub Actions and publishes run evidence. Successful new cohort artifacts are committed to `main`; failed or incomplete runs must remain visible rather than silently producing degraded cohorts.
 
@@ -149,12 +200,12 @@ ghost-talent-benchmark evaluate \
   --outcomes path/to/outcomes-90d.json
 ```
 
-## 8. Publication rule
+## 10. Publication rule
 
-Wins and misses stay published. A benchmark result is not considered evidence of predictive validity unless the frozen cohort, outcome rubric, evaluation horizon, and baseline comparison are all available for inspection.
+A benchmark result is not considered evidence of predictive validity unless the frozen cohort, pre-registered outcome rubric, evaluation horizon, member-level adjudication evidence, and baseline comparison are all available for inspection.
 
-Documentation must distinguish **frozen**, **publicly inspectable**, and **validated**. A tooling change, successful command, or frozen metadata record is not by itself evidence of predictive validity.
+Documentation must distinguish **frozen**, **publicly inspectable**, and **validated**. A tooling change, successful command, frozen metadata record, or unpublished cohort is not by itself evidence of predictive validity.
 
 The correct current public wording is:
 
-> **Six prospective cohorts are frozen in total — one under v0.1.5 and five under v0.2.8. The newest v0.2.8 cohort is publicly inspectable in the repository; the four earlier v0.2.8 full cohort files are not currently public. No outcome horizon has matured, so predictive validity is not established.**
+> **Six prospective cohort freeze records exist — one under v0.1.5 and five under v0.2.8. For v0.2.8, only 20/100 frozen positions are currently member-by-member inspectable in this repository; the other 80 positions are metadata-only here and are ineligible for headline predictive-validity claims unless their original frozen artifacts are recovered and published with provenance. No outcome horizon has matured, so predictive validity is not established.**
