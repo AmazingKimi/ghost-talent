@@ -213,7 +213,12 @@ def _append_observation(root: Path, query: str, query_slug: str, snapshot_id: st
         handle.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
 
 
-def save_snapshot(root: Path, query: str, results: list[dict[str, Any]]) -> dict[str, Any]:
+def save_snapshot(
+    root: Path,
+    query: str,
+    results: list[dict[str, Any]],
+    sources: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     observed = datetime.now(timezone.utc)
     observed_at = observed.isoformat().replace("+00:00", "Z")
     query_slug = _slugify(query)
@@ -263,6 +268,8 @@ def save_snapshot(root: Path, query: str, results: list[dict[str, Any]]) -> dict
         "score_versions": sorted({str(row.get("score_version", "unknown")) for row in results}),
         "ranking": ranking,
     }
+    if sources is not None:
+        payload["sources"] = sources
     with path.open("x", encoding="utf-8") as handle:
         json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
         handle.write("\n")
@@ -275,4 +282,5 @@ def save_snapshot(root: Path, query: str, results: list[dict[str, Any]]) -> dict
         "first_detected": first_detected,
         "history": histories,
         "trajectory": trajectories,
+        "sources": sources or {},
     }
