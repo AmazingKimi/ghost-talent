@@ -16,15 +16,17 @@ Ghost Talent asks:
 
 ## Current status
 
-Ghost Talent is an **experimental research and discovery system**. It does **not** yet have mature predictive-validity results and does not claim to outperform professional sourcing, technical review, or simple baselines.
+Ghost Talent is an **experimental research and discovery system**. It does **not** yet have mature predictive-validity results and does not claim to outperform professional sourcing, technical review, simple baselines, or random controls.
 
-Six prospective cohorts have freeze records: one legacy cohort under score version `0.1.5` and five current-model cohorts under `0.2.8`. **For the current v0.2.8 model, one complete cohort (20 positions) is publicly inspectable in this repository now. Four additional v0.2.8 cohorts (80 positions) are frozen with immutable metadata recorded in [`docs/BENCHMARK.md`](docs/BENCHMARK.md), but their full cohort files are not published here and therefore those 80 positions are not independently inspectable from this repository.** Candidates may overlap across cohorts. No 30 / 90 / 180-day outcome horizon has matured yet.
+Six historical prospective freeze records are recorded: one under score version `0.1.5` and five under `0.2.8`. **For v0.2.8, only one complete cohort (20/100 recorded positions) is currently member-by-member inspectable in this repository. The other four v0.2.8 records (80 positions) have no public member files and no public SHA-256 commitment at protocol-v2 adoption time, so their member-level artifact existence is treated as unverified from public evidence and they are ineligible for headline predictive-validity claims unless an original artifact is recovered with defensible provenance.** Candidates may overlap across cohorts. No 30/90/180-day outcome horizon has matured.
 
-The legacy cohort can validate only its historical model. The five v0.2.8 freeze records define the prospective test of current behavior, but only the published 20-position cohort currently supports repository-level member-by-member inspection. Until outcomes mature, the project should be judged as a falsifiable early-talent hypothesis engine, not a proven prediction system.
+The five v0.2.8 cohorts were created in one execution window and are not independent temporal replications. They also had no synchronized random-control cohort at T0, so they cannot by themselves satisfy the stricter protocol-v2 headline-validity gate.
+
+**Governing benchmark protocol:** [`docs/BENCHMARK_PROTOCOL_v2.md`](docs/BENCHMARK_PROTOCOL_v2.md). It was adopted after the 2026-09-08 freezes but before any outcome horizon matured; the repository does not pretend its new T0 design requirements existed retroactively.
 
 ## What is different
 
-Ghost Talent separates four stages that ordinary GitHub talent search often collapses together:
+Ghost Talent separates:
 
 `Discovery → External Validation → Recommendation → Prospective Evaluation`
 
@@ -38,7 +40,7 @@ The active score version is **0.2.8**:
 
 `Radar = 0.35 External Validation + 0.25 Momentum + 0.20 Visibility Gap + 0.15 Capability + 0.05 Evidence Confidence`
 
-Full specification: [`GHOST_SCORE.md`](GHOST_SCORE.md)
+Full specification: [`docs/GHOST_SCORE.md`](docs/GHOST_SCORE.md)
 
 ## Hard recommendation rules
 
@@ -49,18 +51,18 @@ Current defenses include:
 - self-owned activity is not external validation,
 - stars, forks and general issue activity do not drive Momentum,
 - missing prior history does not become synthetic acceleration,
-- 100-event-truncated GitHub history is reported and conservatively capped,
-- documentation / tests / examples / CI paths do not count as core implementation evidence,
-- inspected PRs need a substantive-change gate before receiving stronger credit,
-- `COLLABORATOR` approval is not treated as maintainer acceptance; current acceptance evidence requires repository `OWNER` or `MEMBER`,
+- truncated GitHub history is reported and conservatively capped,
+- documentation/tests/examples/CI paths do not count as core implementation evidence,
+- inspected PRs need substantive-change evidence,
+- `COLLABORATOR` approval is not maintainer acceptance; current acceptance evidence requires repository `OWNER` or `MEMBER`,
 - already-visible strong people are routed to `PROVEN / ALREADY VISIBLE` rather than emerging recommendations.
 
-v0.2.8 also reduces dependence on a curated upstream allowlist. Recognized repositories remain useful context, but they are **not a mandatory gateway** to EARLY SIGNAL. A substantive PR in a newer or less famous external project can count when changed-file core evidence or owner/member approval verifies the work.
+v0.2.8 reduces dependence on a curated upstream allowlist. Recognized repositories are context, not a mandatory gateway to EARLY SIGNAL.
 
 ## Recommendation states
 
 - **STRONG SIGNAL** — strong recent external validation, sufficient history, and recent owner/member-approved core-path evidence.
-- **EARLY SIGNAL** — credible recent verified external-project evidence with sufficient history and confidence; curated-upstream status is not required.
+- **EARLY SIGNAL** — credible recent verified external-project evidence with sufficient history and confidence.
 - **WATCH** — interesting capability or Radar, but not enough external proof.
 - **DISCOVERED** — found by Scout; no recommendation implied.
 - **LOW CONFIDENCE** — evidence coverage or trust is insufficient.
@@ -68,67 +70,36 @@ v0.2.8 also reduces dependence on a curated upstream allowlist. Recognized repos
 
 ## Candidate Dossier
 
-A Scout card is only an evidence summary. The Candidate Dossier is the decision layer:
-
-- technical profile,
-- why now,
-- best external evidence,
-- evidence mix,
-- trajectory,
-- recommendation,
-- main evidence risk.
-
-The practical question is:
+A Scout card is only an evidence summary. The Candidate Dossier is the decision layer: technical profile, why now, best external evidence, evidence mix, trajectory, recommendation, and main evidence risk.
 
 > **Why should a technical reviewer spend time on this person now?**
 
 ## Evidence and identity
 
-Current public sources are GitHub and OpenAlex. Coverage is incomplete by design and strong closed-source engineers can be missed.
-
-Cross-source identity uncertainty remains uncertainty. A name match is not treated as verified identity. Public work is used for research intelligence only; Ghost Talent is not an employment-decision system and does not infer sensitive attributes.
+Current public sources are GitHub and OpenAlex. Coverage is incomplete by design and strong closed-source engineers can be missed. Cross-source identity uncertainty remains uncertainty. Public work is used for research intelligence only; Ghost Talent is not an employment-decision system and does not infer sensitive attributes.
 
 ## Benchmark
 
-Frozen prospective cohorts currently visible in the project record:
+| Benchmark ID | Score | Size | Full cohort public here? | Evidence eligibility |
+|---|---:|---:|---|---|
+| `2026-09-08-cuda-triton-v01` | 0.1.5 | 20 | No | historical record; not member-level public here |
+| `2026-09-08-llm-inference-cuda-triton-v028` | 0.2.8 | 20 | No | member artifact unverified from public evidence |
+| `2026-09-08-ai-compiler-runtime-v028` | 0.2.8 | 20 | No | member artifact unverified from public evidence |
+| `2026-09-08-quantization-kernels-v028` | 0.2.8 | 20 | No | member artifact unverified from public evidence |
+| `2026-09-08-inference-infrastructure-v028` | 0.2.8 | 20 | No | member artifact unverified from public evidence |
+| `2026-09-08-distributed-training-systems-v028` | 0.2.8 | 20 | **Yes** | publicly inspectable frozen cohort |
 
-| Benchmark ID | Query | Snapshot | Score version | Size | Full cohort public here? |
-| --- | --- | --- | --- | ---: | --- |
-| `2026-09-08-cuda-triton-v01` | `LLM inference CUDA Triton` | `20260907T162245054462Z-b36e731d` | `0.1.5` | 20 | No |
-| `2026-09-08-llm-inference-cuda-triton-v028` | `LLM inference CUDA Triton` | `20260908T005128477579Z-fd9bc3d3` | `0.2.8` | 20 | No |
-| `2026-09-08-ai-compiler-runtime-v028` | `AI compiler runtime` | `20260908T005340535599Z-29700119` | `0.2.8` | 20 | No |
-| `2026-09-08-quantization-kernels-v028` | `quantization kernels` | `20260908T005531156995Z-7dbcac45` | `0.2.8` | 20 | No |
-| `2026-09-08-inference-infrastructure-v028` | `inference infrastructure` | `20260908T005721112409Z-09e4b189` | `0.2.8` | 20 | No |
-| `2026-09-08-distributed-training-systems-v028` | `distributed training systems` | `20260908T033259838534Z-0675dccf` | `0.2.8` | 20 | **Yes** |
+The public cohort is [`benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json`](benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json). Missing historical member files will never be reconstructed from later API data.
 
-The distributed-training cohort is committed publicly under [`benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json`](benchmarks/2026-09-08-distributed-training-systems-v028/cohort.json). The earlier four v0.2.8 cohorts were frozen locally before automated artifact publication was added; their immutable metadata is recorded in [`docs/BENCHMARK.md`](docs/BENCHMARK.md), but their full cohort files are not claimed to be public in this repository.
+Protocol v2 requires, before any future headline predictive-validity claim: a full frozen artifact, SHA-256 commitment at freeze time, a 90-day primary horizon, blind adjudication, member-level evidence, simple baselines, an eligible same-population random control, and deduplicated pooled statistics where pooling is used. Null/negative results must be published as prominently as positive results.
 
-This distinction is intentional: **frozen is not the same claim as publicly inspectable**. We do not reconstruct missing historical cohort files from later data merely to make the repository look complete.
-
-Benchmark metrics include Precision@K, Breakout Lead Time, and comparison against followers, stars and raw contribution count. Wins and misses are both retained. No predictive-validity claim will be made before outcome horizons mature and frozen cohorts can be evaluated against those baselines.
-
-Protocol and exact as-of timestamps: [`docs/BENCHMARK.md`](docs/BENCHMARK.md)
+Operational registry: [`docs/BENCHMARK.md`](docs/BENCHMARK.md).
 
 ## Credibility work before outcomes mature
 
-Before the prospective benchmark can answer “does this actually work?”, Ghost Talent can still test “does this model fail in obvious ways?”
+Current credibility work includes adversarial/anti-gaming tests, false-positive invariants, component-correlation analysis, identity audit protocol, retrospective-validation rules, and automated GitHub Actions checks. These are sanity checks, **not substitutes for predictive validation**.
 
-Current credibility work includes:
-
-- adversarial / anti-gaming tests,
-- false-positive invariants,
-- component-correlation analysis,
-- identity audit protocol,
-- retrospective validation protocol with explicit historical-observability rules,
-- automated GitHub Actions credibility checks.
-
-These are sanity checks, **not substitutes for predictive validation**.
-
-See:
-
-- [`docs/ADVERSARIAL_TESTS.md`](docs/ADVERSARIAL_TESTS.md)
-- [`docs/CREDIBILITY_PHASE.md`](docs/CREDIBILITY_PHASE.md)
-- [`docs/RETROSPECTIVE_VALIDATION.md`](docs/RETROSPECTIVE_VALIDATION.md)
+See [`docs/ADVERSARIAL_TESTS.md`](docs/ADVERSARIAL_TESTS.md), [`docs/CREDIBILITY_PHASE.md`](docs/CREDIBILITY_PHASE.md), and [`docs/RETROSPECTIVE_VALIDATION.md`](docs/RETROSPECTIVE_VALIDATION.md).
 
 ## Run locally
 
@@ -142,23 +113,22 @@ pip install -e .
 python -m ghost_talent.app
 ```
 
-Then open `http://127.0.0.1:8765`.
-
-On macOS, `./start.command` remains available as a convenience launcher.
+Then open `http://127.0.0.1:8765`. On macOS, `./start.command` is available as a convenience launcher.
 
 A GitHub token is optional for lightweight public discovery, but **full External Validation and recommendation-quality output require authenticated GitHub access**. Keep tokens local and never commit them.
 
 ## Known limitations
 
 - no mature predictive-validity result yet,
-- the legacy frozen cohort validates an older model rather than current v0.2.8,
-- only one complete v0.2.8 cohort (20 positions) is publicly inspectable in this repository; four additional frozen v0.2.8 cohorts (80 positions) currently have public metadata but not public member files,
+- only 20/100 v0.2.8 recorded positions are member-level public here,
+- the four unpublished v0.2.8 member artifacts have no public pre-outcome hash commitment at v2 adoption time,
+- the existing v0.2.8 cohorts lack synchronized random controls and are not temporal replications,
+- protocol v2 is currently stricter than the benchmark software; several enforcement features remain to be implemented before a v2 headline claim,
 - deterministic weights and thresholds remain uncalibrated hypotheses,
 - GitHub followers are a weak visibility proxy,
-- GitHub public-event history is incomplete and can truncate at 100 events,
-- public OSS evidence undercovers excellent closed-source engineers,
-- external PR inspection is bounded rather than a complete code review,
-- mixed external-project inspection can still miss important PRs,
+- public-event history is incomplete,
+- public OSS evidence undercovers strong closed-source engineers,
+- external PR inspection is bounded,
 - cross-source identity verification remains conservative.
 
 ## Principles
@@ -169,8 +139,8 @@ A GitHub token is optional for lightweight public discovery, but **full External
 4. Missing evidence stays missing.
 5. Identity uncertainty remains uncertainty.
 6. Historical evidence cannot be rewritten with future information.
-7. Benchmark wins and misses both remain visible.
-8. Frozen evidence and publicly inspectable evidence are stated separately.
+7. Wins, misses, null results, and protocol failures remain visible.
+8. Frozen, publicly inspectable, and validated are different claims.
 9. Sensitive personal attributes are outside the model.
 
 ## License
