@@ -158,22 +158,28 @@ async def prospective_batch(
 
         scout_result = None
         github_status = None
+        github_detail = None
         for attempt in range(max_retries + 1):
             scout_result = await scout(query, limit=top_k)
-            github_status = (scout_result.get("sources") or {}).get("github", {}).get("status")
+            github_source = (scout_result.get("sources") or {}).get("github", {})
+            github_status = github_source.get("status")
+            github_detail = github_source.get("detail")
             if github_status == "ok":
                 break
-            if github_status == "rate_limited" and attempt < max_retries:
+            if github_status in {"rate_limited", "unavailable"} and attempt < max_retries:
                 await asyncio.sleep(retry_delay_seconds)
                 continue
             break
 
         if github_status != "ok":
-            skipped.append({
+            skipped_item = {
                 "query": query,
                 "benchmark_id": benchmark_id,
                 "reason": f"github_{github_status or 'unknown'}",
-            })
+            }
+            if github_detail:
+                skipped_item["detail"] = github_detail
+            skipped.append(skipped_item)
             continue
 
         results = list((scout_result or {}).get("results") or [])
@@ -213,8 +219,8 @@ async def prospective_batch(
             "snapshot_path": snapshot.get("path"),
         })
 
-        if query != selected[-1] and retry_delay_seconds > 0:
-            await asyncio.sleep(min(retry_delay_seconds, 15.0))
+        if len(selected) > 1:
+            await asyncio.sleep(3.0)
 
     return {
         "status": "complete" if not skipped else "partial",
@@ -325,8 +331,6 @@ def main() -> None:
     batch.add_argument("--top-k", type=int, default=20)
     batch.add_argument("--score-version", default=CURRENT_SCORE_VERSION)
     batch.add_argument("--query", action="append", dest="queries")
-    batch.add_argument("--max-retries", type=int, default=2)
-    batch.add_argument("--retry-delay-seconds", type=float, default=65.0)
 
     template = sub.add_parser("outcome-template", help="Create an adjudication template for a frozen cohort")
     template.add_argument("--benchmark-id", required=True)
@@ -346,16 +350,7 @@ def main() -> None:
             required_score_version=args.require_score_version,
         )
     elif args.command == "prospective-batch":
-        result = asyncio.run(
-            prospective_batch(
-                ROOT,
-                args.queries,
-                args.top_k,
-                args.score_version,
-                args.max_retries,
-                args.retry_delay_seconds,
-            )
-        )
+        result = asyncio.run(prospective_batch(ROOT, args.queries, args.top_k, args.score_version))
     elif args.command == "outcome-template":
         result = outcome_template(ROOT, args.benchmark_id, args.horizon_days)
     else:
