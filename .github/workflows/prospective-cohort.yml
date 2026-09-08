@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/prospective-cohort.yml'
+      - 'ghost_talent/scout.py'
+      - 'ghost_talent/sources/github_compat.py'
+      - 'ghost_talent/benchmark.py'
   workflow_dispatch:
     inputs:
       query:
@@ -73,7 +76,7 @@ jobs:
         id: detect
         shell: bash
         run: |
-          COUNT=$(find benchmarks -path '*-v028/cohort.json' -type f 2>/dev/null | wc -l | tr -d ' ')
+          COUNT=$((find benchmarks -path '*-v028/cohort.json' -type f -print 2>/dev/null || true) | wc -l | tr -d ' ')
           echo "count=$COUNT" >> "$GITHUB_OUTPUT"
           if [ "$COUNT" -gt 0 ]; then
             echo "frozen=true" >> "$GITHUB_OUTPUT"
