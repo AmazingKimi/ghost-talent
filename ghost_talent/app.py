@@ -68,6 +68,21 @@ async def favicon():
     return FileResponse(ROOT / "web" / "favicon.svg", media_type="image/svg+xml")
 
 
+def _watchlist_login(item: dict[str, Any]) -> str:
+    candidate = item.get("candidate") if isinstance(item.get("candidate"), dict) else {}
+    return str(candidate.get("login") or item.get("login") or "").strip()
+
+
+def _normalize_watchlist_item(login: str, row: dict[str, Any]) -> dict[str, Any]:
+    payload = dict(row)
+    candidate = dict(payload.get("candidate") or {})
+    candidate["login"] = login
+    payload["candidate"] = candidate
+    payload.pop("login", None)
+    payload["saved_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return payload
+
+
 def _load_watchlist() -> list[dict[str, Any]]:
     if not WATCHLIST_PATH.exists():
         return []
@@ -187,14 +202,15 @@ async def github_disconnect():
 
 @app.get("/api/scout/preview")
 async def run_scout_preview(q: str = Query(min_length=2, max_length=120), limit: int = 6):
-    authenticated = bool(load_connected_token())
-    return {
-        "query": q,
-        "count": 0,
-        "results": [],
-        "complete": True,
-        "sources": {"github": {"status": "ok", "authenticated": authenticated, "mode": auth_mode()}},
-    }
+    raise HTTPException(
+        status_code=409,
+        detail={
+            "code": "preview_disabled",
+            "message": "Quota-free preview does not perform discovery. Use /api/scout for real evidence-backed discovery.",
+            "complete": False,
+            "snapshot_written": False,
+        },
+    )
 
 
 @app.get("/api/scout")
@@ -231,15 +247,15 @@ async def get_watchlist():
 @app.put("/api/watchlist/{login}")
 async def put_watchlist(login: str, row: dict[str, Any] = Body(...)):
     login = login.strip()
-    candidate = row.get("candidate") or {}
-    row_login = str(candidate.get("login") or login)
-    if row_login.lower() != login.lower():
+    if not login:
+        raise HTTPException(status_code=400, detail="Candidate login is required.")
+    supplied_login = _watchlist_login(row)
+    if supplied_login and supplied_login.lower() != login.lower():
         raise HTTPException(status_code=400, detail="Candidate login does not match path.")
     items = _load_watchlist()
-    payload = {**row, "saved_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")}
+    payload = _normalize_watchlist_item(login, row)
     for index, item in enumerate(items):
-        existing = str((item.get("candidate") or {}).get("login") or "")
-        if existing.lower() == login.lower():
+        if _watchlist_login(item).lower() == login.lower():
             items[index] = payload
             break
     else:
@@ -251,9 +267,10 @@ async def put_watchlist(login: str, row: dict[str, Any] = Body(...)):
 @app.delete("/api/watchlist/{login}")
 async def delete_watchlist(login: str):
     items = _load_watchlist()
-    filtered = [item for item in items if str((item.get("candidate") or {}).get("login") or "").lower() != login.lower()]
+    filtered = [item for item in items if _watchlist_login(item).lower() != login.lower()]
+    removed = len(filtered) != len(items)
     _save_watchlist(filtered)
-    return {"saved": False, "login": login, "count": len(filtered)}
+    return {"saved": False, "removed": removed, "login": login, "count": len(filtered)}
 
 
 @app.get("/api/validation")
