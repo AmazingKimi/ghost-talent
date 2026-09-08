@@ -3,7 +3,7 @@ import asyncio,os
 from .identity import resolve_openalex_identity,stable_subject_id
 from .models import Candidate,Evidence
 from .scoring import score_candidate
-from .sources.github import GitHubSource
+from .sources.github_compat import GitHubSource
 from .sources.openalex import OpenAlexSource
 
 def _source_status(r):
