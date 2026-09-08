@@ -8,6 +8,26 @@ from .sources.openalex import OpenAlexSource
 def _source_status(r):
  if not isinstance(r,Exception):return {"status":"ok"}
  m=str(r).lower();return {"status":"rate_limited" if any(x in m for x in ("rate limit","429","403")) else "unavailable","detail":str(r)}
+
+async def scout_preview(query:str,limit:int=6)->dict:
+ github=GitHubSource(os.getenv("GITHUB_TOKEN"))
+ try:
+  items=await github.discover(query,candidate_limit=max(1,min(limit,6)),quality_budget=0,pr_repo_budget=0)
+  rows=[]
+  for item in items[:limit]:
+   rows.append({
+    "provisional":True,
+    "candidate":{
+     "login":item.get("login"),"name":item.get("name"),"profile_url":item.get("profile_url"),
+     "followers":item.get("followers",0),"primary_repository":item.get("primary_repository"),
+    },
+    "activity":{"events_7d":item.get("recent_events_7d",0),"events_30d":item.get("recent_events_30d",0)},
+    "status":"VALIDATING",
+   })
+  return {"query":query,"count":len(rows),"results":rows}
+ finally:
+  await github.close()
+
 async def scout(query:str,limit:int=20)->dict:
  github=GitHubSource(os.getenv("GITHUB_TOKEN"));openalex=OpenAlexSource()
  try:
