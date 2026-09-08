@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 from .dossier import build_dossier
-from .scout import scout, scout_preview
+from .scout import scout
 from .snapshot import save_snapshot
 
 APP_VERSION = "0.3.3"
@@ -52,10 +52,21 @@ async def runtime():
 
 @app.get("/api/scout/preview")
 async def run_scout_preview(q: str = Query(min_length=2, max_length=120), limit: int = 6):
-    try:
-        return await scout_preview(q, limit=max(1, min(limit, 6)))
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Preview failed: {exc}") from exc
+    # Preview is intentionally quota-free. The full scout request owns GitHub discovery.
+    authenticated = bool(os.getenv("GITHUB_TOKEN"))
+    return {
+        "query": q,
+        "count": 0,
+        "results": [],
+        "complete": True,
+        "sources": {
+            "github": {
+                "status": "ok",
+                "authenticated": authenticated,
+                "mode": "authenticated" if authenticated else "public_limited",
+            }
+        },
+    }
 
 
 @app.get("/api/scout")
