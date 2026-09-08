@@ -18,7 +18,9 @@ Ghost Talent asks:
 
 Ghost Talent is an **experimental research and discovery system**. It does **not** yet have mature predictive-validity results and does not claim to outperform professional sourcing, technical review, or simple baselines.
 
-One real prospective cohort is already frozen and waiting for 30 / 90 / 180-day outcomes. Until those outcomes mature, the project should be judged as a falsifiable early-talent hypothesis engine, not a proven prediction system.
+One real prospective cohort is already frozen and waiting for 30 / 90 / 180-day outcomes. That cohort was frozen under score version `0.1.5`, so its future results will validate that historical model only. A new prospective cohort under the current model is required to validate current behavior directly.
+
+Until outcomes mature, the project should be judged as a falsifiable early-talent hypothesis engine, not a proven prediction system.
 
 ## What is different
 
@@ -28,7 +30,7 @@ Ghost Talent separates four stages that ordinary GitHub talent search often coll
 
 A person can rank highly in discovery and still receive `WATCH`, `LOW CONFIDENCE`, or `PROVEN / ALREADY VISIBLE` rather than an emerging recommendation.
 
-The active score version is **0.2.7**:
+The active score version is **0.2.8**:
 
 `Ghost Score = 0.30 Capability + 0.25 External Validation + 0.25 Momentum + 0.10 Visibility Gap + 0.10 Evidence Confidence`
 
@@ -42,22 +44,23 @@ Full specification: [`GHOST_SCORE.md`](GHOST_SCORE.md)
 
 **High GitHub activity alone can never create EARLY SIGNAL or STRONG SIGNAL.**
 
-v0.2.7 adds explicit defenses against several false-positive patterns:
+Current defenses include:
 
 - self-owned activity is not external validation,
 - stars, forks and general issue activity do not drive Momentum,
 - missing prior history does not become synthetic acceleration,
 - 100-event-truncated GitHub history is reported and conservatively capped,
-- recognized upstream repositories do not automatically imply substantive work,
 - documentation / tests / examples / CI paths do not count as core implementation evidence,
-- inspected upstream PRs need a substantive-change gate before receiving stronger credit,
+- inspected PRs need a substantive-change gate before receiving stronger credit,
 - `COLLABORATOR` approval is not treated as maintainer acceptance; current acceptance evidence requires repository `OWNER` or `MEMBER`,
 - already-visible strong people are routed to `PROVEN / ALREADY VISIBLE` rather than emerging recommendations.
+
+v0.2.8 also reduces dependence on a curated upstream allowlist. Recognized repositories remain useful context, but they are **not a mandatory gateway** to EARLY SIGNAL. A substantive PR in a newer or less famous external project can count when changed-file core evidence or owner/member approval verifies the work.
 
 ## Recommendation states
 
 - **STRONG SIGNAL** — strong recent external validation, sufficient history, and recent owner/member-approved core-path evidence.
-- **EARLY SIGNAL** — credible recent upstream validation with sufficient history and evidence confidence.
+- **EARLY SIGNAL** — credible recent verified external-project evidence with sufficient history and confidence; curated-upstream status is not required.
 - **WATCH** — interesting capability or Radar, but not enough external proof.
 - **DISCOVERED** — found by Scout; no recommendation implied.
 - **LOW CONFIDENCE** — evidence coverage or trust is insufficient.
@@ -96,9 +99,11 @@ The first real production cohort is frozen and immutable:
 - cohort size: 20
 - score version: `0.1.5`
 
-It must never be recomputed using v0.2.7.
+It must never be recomputed using v0.2.8.
 
 Benchmark metrics include Precision@K, Breakout Lead Time, and comparison against followers, stars and raw contribution count. Wins and misses are both retained.
+
+**Important validation gap:** the first cohort can validate only frozen score version `0.1.5`. The next benchmark action is to freeze one or more independent prospective cohorts under `0.2.8` so future outcomes can test the current model directly.
 
 Protocol: [`docs/BENCHMARK.md`](docs/BENCHMARK.md)
 
@@ -143,12 +148,13 @@ A GitHub token is optional for lightweight public discovery, but **full External
 ## Known limitations
 
 - no mature predictive-validity result yet,
+- the first frozen cohort validates an older model rather than current v0.2.8,
 - deterministic weights and thresholds remain uncalibrated hypotheses,
 - GitHub followers are a weak visibility proxy,
 - GitHub public-event history is incomplete and can truncate at 100 events,
 - public OSS evidence undercovers excellent closed-source engineers,
-- recognized-upstream coverage is curated and incomplete,
-- PR inspection is bounded rather than a complete code review,
+- external PR inspection is bounded rather than a complete code review,
+- mixed external-project inspection can still miss important PRs,
 - cross-source identity verification remains conservative.
 
 ## Principles
