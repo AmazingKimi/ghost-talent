@@ -98,8 +98,17 @@ class GitHubSource:
             if closed_at:
                 try:closed_ts=datetime.fromisoformat(str(closed_at).replace("Z","+00:00"))
                 except ValueError:closed_ts=None
-            rows.append({"repository":repo,"number":pr.get("number"),"title":pr.get("title"),"url":pr.get("html_url"),"merged_or_closed_at":closed_at,"recent_180d":bool(closed_ts and closed_ts>=recent_cutoff),"recognized_upstream":recognized,"core_path_signal":False,"core_path_evidence":"not_inspected","maintainer_accepted":False,"maintainer_acceptance_evidence":"not_inspected","substantive":False})
-        inspect=[row for row in rows if row["recognized_upstream"]][:5]
+            rows.append({"repository":repo,"number":pr.get("number"),"title":pr.get("title"),"url":pr.get("html_url"),"merged_or_closed_at":closed_at,"recent_180d":bool(closed_ts and closed_ts>=recent_cutoff),"recognized_upstream":recognized,"core_path_signal":False,"core_path_evidence":"not_inspected","maintainer_accepted":False,"maintainer_acceptance_evidence":"not_inspected","substantive":False,"verified_external_project":False})
+        # Curated upstream is now a context boost, not the only inspection path.
+        # Inspect a bounded mix: recognized projects first, then recent external projects.
+        recognized_rows=[row for row in rows if row["recognized_upstream"]]
+        open_rows=[row for row in rows if not row["recognized_upstream"] and row.get("recent_180d")]
+        inspect=[];seen=set()
+        for row in recognized_rows[:4]+open_rows[:4]+rows[:4]:
+            key=(row["repository"],row["number"])
+            if key in seen:continue
+            seen.add(key);inspect.append(row)
+            if len(inspect)>=8:break
         async def verify(row):
             try:files,reviews=await asyncio.gather(self._get(f"{API}/repos/{row['repository']}/pulls/{row['number']}/files",per_page=30),self._get(f"{API}/repos/{row['repository']}/pulls/{row['number']}/reviews",per_page=30))
             except httpx.HTTPStatusError:return row
@@ -108,10 +117,11 @@ class GitHubSource:
             for review in reviews:
                 reviewer=review.get("user") or {};association=str(review.get("author_association") or "").upper();state=str(review.get("state") or "").upper()
                 if substantive and state=="APPROVED" and association in MAINTAINER_ASSOCIATIONS and str(reviewer.get("login") or "").lower()!=login.lower():approvals.append({"login":reviewer.get("login"),"author_association":association,"submitted_at":review.get("submitted_at")})
-            return {**row,"substantive":substantive,"changed_lines":changed_lines,"core_path_signal":bool(core_files) and substantive,"core_path_evidence":"changed_files" if substantive else "inspected_non_substantive","core_files":core_files[:6],"changed_files_sampled":len(names),"maintainer_accepted":bool(approvals),"maintainer_acceptance_evidence":"approved_review" if approvals else "reviews_inspected_no_maintainer_approval","maintainer_approvals":approvals[:3]}
+            core_signal=bool(core_files) and substantive;accepted=bool(approvals);verified_external=bool(substantive and (core_signal or accepted))
+            return {**row,"substantive":substantive,"changed_lines":changed_lines,"core_path_signal":core_signal,"core_path_evidence":"changed_files" if substantive else "inspected_non_substantive","core_files":core_files[:6],"changed_files_sampled":len(names),"maintainer_accepted":accepted,"maintainer_acceptance_evidence":"approved_review" if approvals else "reviews_inspected_no_maintainer_approval","maintainer_approvals":approvals[:3],"verified_external_project":verified_external,"verification_basis":"substantive_core_or_owner_member_approval" if verified_external else "insufficient"}
         verified=await asyncio.gather(*(verify(row) for row in inspect)) if inspect else [];by_key={(r["repository"],r["number"]):r for r in verified};rows=[by_key.get((r["repository"],r["number"]),r) for r in rows]
-        recognized=sum(1 for x in rows if x["recognized_upstream"] and x.get("substantive"));core=sum(1 for x in rows if x.get("core_path_signal"));accepted=sum(1 for x in rows if x.get("maintainer_accepted"));accepted_core=sum(1 for x in rows if x.get("core_path_signal") and x.get("maintainer_accepted"));substantive=sum(1 for x in rows if x.get("substantive"));recent=[x for x in rows if x.get("recent_180d")];recent_recognized=sum(1 for x in recent if x["recognized_upstream"] and x.get("substantive"));recent_core=sum(1 for x in recent if x.get("core_path_signal"));recent_accepted=sum(1 for x in recent if x.get("maintainer_accepted"));recent_accepted_core=sum(1 for x in recent if x.get("core_path_signal") and x.get("maintainer_accepted"))
-        return {"available":True,"external_merged_prs":len(rows),"substantive_external_prs":substantive,"recognized_upstream_prs":recognized,"core_path_prs":core,"core_path_prs_inspected":len(verified),"maintainer_accepted_prs":accepted,"maintainer_review_prs_inspected":len(verified),"maintainer_accepted_core_path_prs":accepted_core,"recent_window_days":180,"recent_external_merged_prs":len(recent),"recent_recognized_upstream_prs":recent_recognized,"recent_core_path_prs":recent_core,"recent_maintainer_accepted_prs":recent_accepted,"recent_maintainer_accepted_core_path_prs":recent_accepted_core,"prs":rows[:8]}
+        recognized=sum(1 for x in rows if x["recognized_upstream"] and x.get("substantive"));verified_external=sum(1 for x in rows if x.get("verified_external_project"));core=sum(1 for x in rows if x.get("core_path_signal"));accepted=sum(1 for x in rows if x.get("maintainer_accepted"));accepted_core=sum(1 for x in rows if x.get("core_path_signal") and x.get("maintainer_accepted"));substantive=sum(1 for x in rows if x.get("substantive"));recent=[x for x in rows if x.get("recent_180d")];recent_recognized=sum(1 for x in recent if x["recognized_upstream"] and x.get("substantive"));recent_verified=sum(1 for x in recent if x.get("verified_external_project"));recent_core=sum(1 for x in recent if x.get("core_path_signal"));recent_accepted=sum(1 for x in recent if x.get("maintainer_accepted"));recent_accepted_core=sum(1 for x in recent if x.get("core_path_signal") and x.get("maintainer_accepted"))
+        return {"available":True,"external_merged_prs":len(rows),"substantive_external_prs":substantive,"verified_external_project_prs":verified_external,"recognized_upstream_prs":recognized,"core_path_prs":core,"core_path_prs_inspected":len(verified),"maintainer_accepted_prs":accepted,"maintainer_review_prs_inspected":len(verified),"maintainer_accepted_core_path_prs":accepted_core,"recent_window_days":180,"recent_external_merged_prs":len(recent),"recent_verified_external_project_prs":recent_verified,"recent_recognized_upstream_prs":recent_recognized,"recent_core_path_prs":recent_core,"recent_maintainer_accepted_prs":recent_accepted,"recent_maintainer_accepted_core_path_prs":recent_accepted_core,"inspection_policy":"bounded_mixed_external_v0.2.8","prs":rows[:8]}
     async def _contribution_quality(self,item):
         repos=sorted(item.get("repositories",[]),key=lambda r:int(r.get("contributions",0)),reverse=True)
         if not repos:return self._empty_quality()
@@ -137,7 +147,7 @@ class GitHubSource:
     @staticmethod
     def _empty_quality(repository=None):return {"available":False,"repository":repository,"merged_pr_count":0,"sampled_pr_count":0,"top_pr":None}
     @staticmethod
-    def _empty_external():return {"available":False,"external_merged_prs":0,"substantive_external_prs":0,"recognized_upstream_prs":0,"core_path_prs":0,"core_path_prs_inspected":0,"maintainer_accepted_prs":0,"maintainer_review_prs_inspected":0,"maintainer_accepted_core_path_prs":0,"recent_window_days":180,"recent_external_merged_prs":0,"recent_recognized_upstream_prs":0,"recent_core_path_prs":0,"recent_maintainer_accepted_prs":0,"recent_maintainer_accepted_core_path_prs":0,"prs":[]}
+    def _empty_external():return {"available":False,"external_merged_prs":0,"substantive_external_prs":0,"verified_external_project_prs":0,"recognized_upstream_prs":0,"core_path_prs":0,"core_path_prs_inspected":0,"maintainer_accepted_prs":0,"maintainer_review_prs_inspected":0,"maintainer_accepted_core_path_prs":0,"recent_window_days":180,"recent_external_merged_prs":0,"recent_verified_external_project_prs":0,"recent_recognized_upstream_prs":0,"recent_core_path_prs":0,"recent_maintainer_accepted_prs":0,"recent_maintainer_accepted_core_path_prs":0,"inspection_policy":"not_checked","prs":[]}
     @staticmethod
     def _event_counts(events):
         now=datetime.now(timezone.utc);d7=now-timedelta(days=7);d30=now-timedelta(days=30);d90=now-timedelta(days=90);c7=c30=c90=0;days=set();ts=[];meaningful=[]
