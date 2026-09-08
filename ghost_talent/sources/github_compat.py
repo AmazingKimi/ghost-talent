@@ -5,10 +5,16 @@ import time
 
 import httpx
 
+from ..github_auth import load_connected_token
 from .github import GitHubSource as _BaseGitHubSource, _CACHE
 
 
 class GitHubSource(_BaseGitHubSource):
+    def __init__(self, token: str | None = None):
+        # Environment GITHUB_TOKEN remains supported, but the normal product path
+        # is the locally connected GitHub account stored outside the repository.
+        super().__init__(token or load_connected_token())
+
     @staticmethod
     def _empty_response_value(url: str):
         if "/search/" in url:
