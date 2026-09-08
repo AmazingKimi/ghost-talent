@@ -15,5 +15,12 @@ html[data-theme="dark"] .preference-actions button.active{background:#eaf1ff;col
 .warning-note{color:#a76308}
 .device-code{font-size:24px;font-weight:900;letter-spacing:.12em;margin-top:12px;color:var(--ink)}
 .github-connect-card{grid-column:span 1}
+.candidate-profile-link{color:inherit;text-decoration:none}.candidate-profile-link:hover{text-decoration:underline}
+.dossier-identity-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.dossier-identity-row h2{margin-bottom:4px}
+.profile-cta,.dossier-link{display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-weight:800;color:var(--ink)}
+.profile-cta{border:1px solid var(--line);background:var(--input);border-radius:12px;padding:10px 13px;font-size:11px;margin-top:42px;white-space:nowrap}.profile-cta:hover,.dossier-link:hover{text-decoration:underline}
+.evidence-list,.contribution-list{display:grid;gap:10px}.evidence-item{border:1px solid var(--line);background:var(--input);border-radius:14px;padding:13px}.evidence-item p{margin:8px 0}.evidence-item-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.evidence-item-head strong{font-size:13px}.dossier-link{font-size:11px;margin-top:4px}
+.contribution-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr) auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(120,140,180,.13)}.contribution-row:last-child{border-bottom:0}
+.trajectory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.trajectory-grid>div{background:var(--input);border-radius:12px;padding:11px}.trajectory-grid strong{display:block;margin-top:4px;font-size:14px}
 @media(max-width:1000px){.settings-preferences{grid-template-columns:1fr 1fr}.github-connect-card{grid-column:1/-1}}
-@media(max-width:700px){.settings-preferences{grid-template-columns:1fr}.github-connect-card{grid-column:auto}}
+@media(max-width:700px){.settings-preferences{grid-template-columns:1fr}.github-connect-card{grid-column:auto}.dossier-identity-row{display:block}.profile-cta{margin-top:8px}.contribution-row{grid-template-columns:1fr}.trajectory-grid{grid-template-columns:1fr 1fr}}
