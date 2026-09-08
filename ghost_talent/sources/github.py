@@ -16,16 +16,33 @@ _CACHE={};_CACHE_TTL_SECONDS=300
 
 class GitHubSource:
     def __init__(self,token:str|None=None):
-        headers={"Accept":"application/vnd.github+json"}
+        headers={"Accept":"application/vnd.github+json","User-Agent":"ghost-talent/0.2.8"}
         if token:headers["Authorization"]=f"Bearer {token}"
         self.authenticated=bool(token);self.client=httpx.AsyncClient(headers=headers,timeout=20.0);self._semaphore=asyncio.Semaphore(6)
     async def close(self):await self.client.aclose()
     async def _get(self,url:str,**params):
         key=f"{url}?{sorted(params.items())}";cached=_CACHE.get(key);now=time.monotonic()
         if cached and now-cached[0]<_CACHE_TTL_SECONDS:return cached[1]
-        async with self._semaphore:
-            r=await self.client.get(url,params=params or None);r.raise_for_status();data=r.json()
-        _CACHE[key]=(now,data);return data
+        last_error=None
+        for attempt in range(3):
+            try:
+                async with self._semaphore:
+                    r=await self.client.get(url,params=params or None);r.raise_for_status()
+                body=r.text.strip()
+                if not body:raise ValueError("empty response body")
+                data=r.json()
+                _CACHE[key]=(time.monotonic(),data);return data
+            except httpx.HTTPStatusError:
+                raise
+            except (httpx.TransportError,ValueError) as e:
+                last_error=e
+                if attempt<2:
+                    await asyncio.sleep(1.5*(attempt+1));continue
+                detail=""
+                if 'r' in locals():
+                    detail=f" status={r.status_code} content_type={r.headers.get('content-type','')} body_prefix={r.text[:120]!r}"
+                raise RuntimeError(f"GitHub transient/non-JSON response after 3 attempts:{detail} error={e}") from e
+        raise RuntimeError(f"GitHub request failed: {last_error}")
     @staticmethod
     def _candidate(candidates,login,profile_url=None):
         item=candidates[login];item["login"]=login;item["profile_url"]=profile_url or item.get("profile_url") or f"https://github.com/{login}";item.setdefault("repositories",[]);item.setdefault("discovery_sources",[]);item.setdefault("merged_pr_discoveries",[]);return item
@@ -99,8 +116,6 @@ class GitHubSource:
                 try:closed_ts=datetime.fromisoformat(str(closed_at).replace("Z","+00:00"))
                 except ValueError:closed_ts=None
             rows.append({"repository":repo,"number":pr.get("number"),"title":pr.get("title"),"url":pr.get("html_url"),"merged_or_closed_at":closed_at,"recent_180d":bool(closed_ts and closed_ts>=recent_cutoff),"recognized_upstream":recognized,"core_path_signal":False,"core_path_evidence":"not_inspected","maintainer_accepted":False,"maintainer_acceptance_evidence":"not_inspected","substantive":False,"verified_external_project":False})
-        # Curated upstream is now a context boost, not the only inspection path.
-        # Inspect a bounded mix: recognized projects first, then recent external projects.
         recognized_rows=[row for row in rows if row["recognized_upstream"]]
         open_rows=[row for row in rows if not row["recognized_upstream"] and row.get("recent_180d")]
         inspect=[];seen=set()
