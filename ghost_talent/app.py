@@ -10,6 +10,15 @@ ROOT = Path(__file__).resolve().parent.parent
 load_dotenv(ROOT / ".env")
 
 from .dossier import build_dossier
+from .github_auth import (
+    auth_mode,
+    disconnect_github,
+    github_auth_status,
+    github_client_id,
+    load_connected_token,
+    poll_device_flow,
+    start_device_flow,
+)
 from .scout import scout
 from .snapshot import save_snapshot
 
@@ -43,17 +52,55 @@ async def favicon():
 
 @app.get("/api/runtime")
 async def runtime():
+    github = await github_auth_status()
     return {
         "status": "ok",
         "version": APP_VERSION,
-        "github_token_configured": bool(os.getenv("GITHUB_TOKEN")),
+        "github_token_configured": bool(load_connected_token()),
+        "github_auth_mode": auth_mode(),
+        "github_oauth_client_configured": bool(github_client_id()),
+        "github": github,
     }
+
+
+@app.post("/api/github/connect/start")
+async def github_connect_start():
+    try:
+        return await start_device_flow()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail={"error": "oauth_not_configured", "message": str(exc)}) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail={"error": "oauth_start_failed", "message": str(exc)}) from exc
+
+
+@app.get("/api/github/connect/poll")
+async def github_connect_poll(flow_id: str = Query(min_length=8, max_length=128)):
+    try:
+        return await poll_device_flow(flow_id)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail={"error": "oauth_poll_failed", "message": str(exc)}) from exc
+
+
+@app.get("/api/github/status")
+async def github_status():
+    return await github_auth_status()
+
+
+@app.delete("/api/github/connect")
+async def github_disconnect():
+    if os.getenv("GITHUB_TOKEN"):
+        raise HTTPException(
+            status_code=409,
+            detail={"error": "environment_token", "message": "GITHUB_TOKEN is supplied by the environment; remove it from .env to disconnect."},
+        )
+    disconnect_github()
+    return {"status": "disconnected"}
 
 
 @app.get("/api/scout/preview")
 async def run_scout_preview(q: str = Query(min_length=2, max_length=120), limit: int = 6):
     # Preview is intentionally quota-free. The full scout request owns GitHub discovery.
-    authenticated = bool(os.getenv("GITHUB_TOKEN"))
+    authenticated = bool(load_connected_token())
     return {
         "query": q,
         "count": 0,
@@ -63,7 +110,7 @@ async def run_scout_preview(q: str = Query(min_length=2, max_length=120), limit:
             "github": {
                 "status": "ok",
                 "authenticated": authenticated,
-                "mode": "authenticated" if authenticated else "public_limited",
+                "mode": auth_mode(),
             }
         },
     }
