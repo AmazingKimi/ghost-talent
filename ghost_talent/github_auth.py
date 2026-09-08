@@ -11,13 +11,20 @@ import httpx
 DEVICE_CODE_URL = "https://github.com/login/device/code"
 ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token"
 API_ROOT = "https://api.github.com"
+DEFAULT_GITHUB_CLIENT_ID = "Ov23lihQt6kJpipe4PvE"
 AUTH_DIR = Path.home() / ".ghost-talent"
 AUTH_FILE = AUTH_DIR / "github-auth.json"
 _FLOWS: dict[str, dict[str, Any]] = {}
 
 
 def github_client_id() -> str | None:
-    return os.getenv("GHOST_TALENT_GITHUB_CLIENT_ID") or os.getenv("GITHUB_OAUTH_CLIENT_ID")
+    # Client IDs are public identifiers. Environment overrides remain useful for
+    # forks/development builds, while the official build works out of the box.
+    return (
+        os.getenv("GHOST_TALENT_GITHUB_CLIENT_ID")
+        or os.getenv("GITHUB_OAUTH_CLIENT_ID")
+        or DEFAULT_GITHUB_CLIENT_ID
+    )
 
 
 def load_connected_token() -> str | None:
