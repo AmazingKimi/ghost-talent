@@ -1,0 +1,18 @@
+{
+  "first_detected_at": "2026-09-08T03:32:59.838534Z",
+  "first_query": "distributed training systems",
+  "first_rank": 13,
+  "first_score_version": "0.2.8",
+  "first_scores": {
+    "capability": 26.1,
+    "evidence_confidence": 52.0,
+    "ghost_score": 20.7,
+    "momentum": 0.0,
+    "visibility_gap": 48.8
+  },
+  "first_snapshot_id": "20260908T033259838534Z-0675dccf",
+  "login": "superccy",
+  "name": "Chaoyi Chen",
+  "profile_url": "https://github.com/superccy",
+  "schema_version": "0.1"
+}

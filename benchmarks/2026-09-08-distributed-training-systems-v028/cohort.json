@@ -1,0 +1,402 @@
+{
+  "as_of_date": "2026-09-08T03:32:59.838534Z",
+  "benchmark_id": "2026-09-08-distributed-training-systems-v028",
+  "cohort_size": 20,
+  "evaluation_horizons_days": [
+    30,
+    90,
+    180
+  ],
+  "frozen_at": "2026-09-08T03:32:59.860650Z",
+  "members": [
+    {
+      "baselines": {
+        "followers": 1030.0,
+        "raw_contributions": 2993.0,
+        "stars": 1925.0
+      },
+      "capability": 49.1,
+      "evidence_confidence": 70.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 44.8,
+      "login": "cfregly",
+      "momentum": 49.2,
+      "name": "Chris Fregly",
+      "profile_url": "https://github.com/cfregly",
+      "radar_score": 40.3,
+      "rank": 1,
+      "score_version": "0.2.8",
+      "visibility_gap": 34.6
+    },
+    {
+      "baselines": {
+        "followers": 15.0,
+        "raw_contributions": 236.0,
+        "stars": 390.0
+      },
+      "capability": 38.2,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 23.6,
+      "login": "mateusz-ciesielski",
+      "momentum": 0.0,
+      "name": "Mateusz Ciesielski",
+      "profile_url": "https://github.com/mateusz-ciesielski",
+      "radar_score": 21.2,
+      "rank": 2,
+      "score_version": "0.2.8",
+      "visibility_gap": 52.2
+    },
+    {
+      "baselines": {
+        "followers": 1133.0,
+        "raw_contributions": 0.0,
+        "stars": 10995.0
+      },
+      "capability": 33.2,
+      "evidence_confidence": 70.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 44.8,
+      "login": "OneSizeFitsQuorum",
+      "momentum": 57.5,
+      "name": "Potato",
+      "profile_url": "https://github.com/OneSizeFitsQuorum",
+      "radar_score": 43.3,
+      "rank": 3,
+      "score_version": "0.2.8",
+      "visibility_gap": 27.0
+    },
+    {
+      "baselines": {
+        "followers": 101.0,
+        "raw_contributions": 3.0,
+        "stars": 10184.0
+      },
+      "capability": 43.9,
+      "evidence_confidence": 62.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 37.9,
+      "login": "SimonCqk",
+      "momentum": 0.0,
+      "name": "Simon_CQK",
+      "profile_url": "https://github.com/SimonCqk",
+      "radar_score": 38.3,
+      "rank": 4,
+      "score_version": "0.2.8",
+      "visibility_gap": 44.8
+    },
+    {
+      "baselines": {
+        "followers": 22.0,
+        "raw_contributions": 21.0,
+        "stars": 126.0
+      },
+      "capability": 42.0,
+      "evidence_confidence": 62.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 37.2,
+      "login": "AFDWang",
+      "momentum": 0.0,
+      "name": "AlfredWangyj_PKU",
+      "profile_url": "https://github.com/AFDWang",
+      "radar_score": 38.2,
+      "rank": 5,
+      "score_version": "0.2.8",
+      "visibility_gap": 52.0
+    },
+    {
+      "baselines": {
+        "followers": 174.0,
+        "raw_contributions": 2.0,
+        "stars": 1925.0
+      },
+      "capability": 23.6,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 32.8,
+      "login": "cr7258",
+      "momentum": 58.0,
+      "name": "Se7en",
+      "profile_url": "https://github.com/cr7258",
+      "radar_score": 31.0,
+      "rank": 6,
+      "score_version": "0.2.8",
+      "visibility_gap": 32.7
+    },
+    {
+      "baselines": {
+        "followers": 117.0,
+        "raw_contributions": 26.0,
+        "stars": 124.0
+      },
+      "capability": 36.1,
+      "evidence_confidence": 62.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 29.4,
+      "login": "Sanzo00",
+      "momentum": 0.0,
+      "name": "Hao Yuan",
+      "profile_url": "https://github.com/Sanzo00",
+      "radar_score": 28.3,
+      "rank": 7,
+      "score_version": "0.2.8",
+      "visibility_gap": 40.5
+    },
+    {
+      "baselines": {
+        "followers": 101.0,
+        "raw_contributions": 8.0,
+        "stars": 139.0
+      },
+      "capability": 31.2,
+      "evidence_confidence": 70.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 28.6,
+      "login": "bgmarx",
+      "momentum": 0.0,
+      "name": "Ben Marx",
+      "profile_url": "https://github.com/bgmarx",
+      "radar_score": 27.6,
+      "rank": 8,
+      "score_version": "0.2.8",
+      "visibility_gap": 39.1
+    },
+    {
+      "baselines": {
+        "followers": 2.0,
+        "raw_contributions": 2.0,
+        "stars": 10184.0
+      },
+      "capability": 26.9,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 21.6,
+      "login": "Hansyangxingxiang",
+      "momentum": 0.0,
+      "name": "yangxingxiang",
+      "profile_url": "https://github.com/Hansyangxingxiang",
+      "radar_score": 21.7,
+      "rank": 9,
+      "score_version": "0.2.8",
+      "visibility_gap": 56.2
+    },
+    {
+      "baselines": {
+        "followers": 57.0,
+        "raw_contributions": 68.0,
+        "stars": 126.0
+      },
+      "capability": 33.6,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 23.1,
+      "login": "HugoZHL",
+      "momentum": 0.0,
+      "name": "Hugo Zhang",
+      "profile_url": "https://github.com/HugoZHL",
+      "radar_score": 21.1,
+      "rank": 10,
+      "score_version": "0.2.8",
+      "visibility_gap": 43.2
+    },
+    {
+      "baselines": {
+        "followers": 23.0,
+        "raw_contributions": 4.0,
+        "stars": 10184.0
+      },
+      "capability": 30.2,
+      "evidence_confidence": 44.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 21.6,
+      "login": "qieqieplus",
+      "momentum": 0.0,
+      "name": null,
+      "profile_url": "https://github.com/qieqieplus",
+      "radar_score": 20.9,
+      "rank": 11,
+      "score_version": "0.2.8",
+      "visibility_gap": 46.4
+    },
+    {
+      "baselines": {
+        "followers": 2.0,
+        "raw_contributions": 5.0,
+        "stars": 124.0
+      },
+      "capability": 21.4,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 19.7,
+      "login": "Savannah99",
+      "momentum": 0.0,
+      "name": "Luning Li",
+      "profile_url": "https://github.com/Savannah99",
+      "radar_score": 20.4,
+      "rank": 12,
+      "score_version": "0.2.8",
+      "visibility_gap": 53.7
+    },
+    {
+      "baselines": {
+        "followers": 10.0,
+        "raw_contributions": 16.0,
+        "stars": 124.0
+      },
+      "capability": 26.1,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 20.7,
+      "login": "superccy",
+      "momentum": 0.0,
+      "name": "Chaoyi Chen",
+      "profile_url": "https://github.com/superccy",
+      "radar_score": 20.1,
+      "rank": 13,
+      "score_version": "0.2.8",
+      "visibility_gap": 48.8
+    },
+    {
+      "baselines": {
+        "followers": 6.0,
+        "raw_contributions": 7.0,
+        "stars": 126.0
+      },
+      "capability": 22.8,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 19.8,
+      "login": "Hankpipi",
+      "momentum": 0.0,
+      "name": "Zihao Yu",
+      "profile_url": "https://github.com/Hankpipi",
+      "radar_score": 19.8,
+      "rank": 14,
+      "score_version": "0.2.8",
+      "visibility_gap": 49.7
+    },
+    {
+      "baselines": {
+        "followers": 318.0,
+        "raw_contributions": 31.0,
+        "stars": 124.0
+      },
+      "capability": 30.0,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 20.9,
+      "login": "ysj1173886760",
+      "momentum": 0.0,
+      "name": "sheep",
+      "profile_url": "https://github.com/ysj1173886760",
+      "radar_score": 18.4,
+      "rank": 15,
+      "score_version": "0.2.8",
+      "visibility_gap": 32.4
+    },
+    {
+      "baselines": {
+        "followers": 69.0,
+        "raw_contributions": 2.0,
+        "stars": 126.0
+      },
+      "capability": 18.3,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 17.0,
+      "login": "codecaution",
+      "momentum": 0.0,
+      "name": "Xiaonan Nie",
+      "profile_url": "https://github.com/codecaution",
+      "radar_score": 16.3,
+      "rank": 16,
+      "score_version": "0.2.8",
+      "visibility_gap": 35.3
+    },
+    {
+      "baselines": {
+        "followers": 19.0,
+        "raw_contributions": 1.0,
+        "stars": 139.0
+      },
+      "capability": 15.2,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 15.6,
+      "login": "sleeping-barber",
+      "momentum": 0.0,
+      "name": "Camal Cakar",
+      "profile_url": "https://github.com/sleeping-barber",
+      "radar_score": 15.4,
+      "rank": 17,
+      "score_version": "0.2.8",
+      "visibility_gap": 40.7
+    },
+    {
+      "baselines": {
+        "followers": 88.0,
+        "raw_contributions": 1.0,
+        "stars": 139.0
+      },
+      "capability": 15.2,
+      "evidence_confidence": 52.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 14.7,
+      "login": "jeffweiss",
+      "momentum": 0.0,
+      "name": "Jeff Weiss",
+      "profile_url": "https://github.com/jeffweiss",
+      "radar_score": 13.8,
+      "rank": 18,
+      "score_version": "0.2.8",
+      "visibility_gap": 32.6
+    },
+    {
+      "baselines": {
+        "followers": 802.0,
+        "raw_contributions": 46.0,
+        "stars": 139.0
+      },
+      "capability": 48.6,
+      "evidence_confidence": 70.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 40.4,
+      "login": "keathley",
+      "momentum": 0.0,
+      "name": "Chris Keathley",
+      "profile_url": "https://github.com/keathley",
+      "radar_score": 39.3,
+      "rank": 19,
+      "score_version": "0.2.8",
+      "visibility_gap": 35.7
+    },
+    {
+      "baselines": {
+        "followers": 712.0,
+        "raw_contributions": 40.0,
+        "stars": 10184.0
+      },
+      "capability": 34.9,
+      "evidence_confidence": 29.0,
+      "first_detected_at": "2026-09-08T03:32:59.838534Z",
+      "ghost_score": 30.9,
+      "login": "SF-Zhou",
+      "momentum": 58.0,
+      "name": null,
+      "profile_url": "https://github.com/SF-Zhou",
+      "radar_score": 27.2,
+      "rank": 20,
+      "score_version": "0.2.8",
+      "visibility_gap": 30.2
+    }
+  ],
+  "outcome_definition_version": "0.1",
+  "query": "distributed training systems",
+  "query_slug": "distributed-training-systems",
+  "schema_version": "0.1",
+  "score_versions": [
+    "0.2.8"
+  ],
+  "source_snapshot_id": "20260908T033259838534Z-0675dccf",
+  "status": "frozen"
+}
