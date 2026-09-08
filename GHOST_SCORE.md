@@ -6,193 +6,125 @@ It is designed for **early technical talent discovery**, not résumé screening,
 
 ## Current version
 
-Active score version: **0.2.6**.
+Active score version: **0.2.7**.
 
-The model is intentionally explicit and versioned. Its weights and thresholds are hypotheses that require empirical validation; they are not learned probabilities.
+The model is explicit and versioned. Its weights and thresholds are research hypotheses that require empirical validation; they are not learned probabilities.
 
 ## Ghost Score
 
 `Ghost Score = 0.30 Capability + 0.25 External Validation + 0.25 Momentum + 0.10 Visibility Gap + 0.10 Evidence Confidence`
 
-All dimensions are normalized to 0–100.
-
-### Capability
-
-Capability combines internal execution evidence and external validation:
-
 `Capability = 0.65 Internal Capability + 0.35 External Validation`
 
-Internal Capability is derived from public repository contribution evidence and project context. Large contribution volume is log-scaled and capped; it cannot by itself create an emerging recommendation.
+All dimensions are normalized to 0–100.
 
-### External Validation
+## External Validation
 
-External Validation is intentionally separate from self-controlled activity.
+External Validation is separate from self-controlled activity. v0.2.7 only gives strong upstream credit to evidence that survives additional checks:
 
-Current signals include:
-
-- external merged pull requests,
-- merged PRs in recognized upstream repositories,
-- changed-file verified core technical paths,
-- maintainer-approved reviews,
-- same-PR maintainer approval + core-path evidence,
+- external merged PR discovery,
+- substantive-change gate for inspected upstream PRs,
+- recognized upstream repository context,
+- changed-file verified core implementation paths,
+- owner/member-approved reviews,
 - recency of external evidence.
 
-External Validation is the most important Radar component because Ghost Talent should reward work accepted by high-quality external systems, not merely work performed in a candidate's own repository.
+`COLLABORATOR` review status is not treated as maintainer acceptance. Documentation, tests, examples, CI and other non-core paths are excluded from core-path evidence. A recognized repository name alone is insufficient for strong technical credit.
 
-### Momentum
+## Momentum
 
-Momentum estimates recent activity acceleration from observable public GitHub events, active-day density, and observed event span.
+Momentum now counts only a bounded set of development-relevant GitHub public event types rather than stars, forks and general issue activity.
 
-Momentum is **not** treated as proof of technical improvement. A person can become more active without becoming more technically important. Therefore Momentum cannot independently produce EARLY or STRONG recommendation states.
+Important v0.2.7 rules:
 
-### Visibility Gap
+- no prior observable history means acceleration is **not inferred**,
+- insufficient history caps Momentum and blocks EARLY / STRONG,
+- a 100-event-truncated public-event sample is reported and conservatively capped,
+- activity acceleration is not treated as technical improvement.
 
-Current visibility is approximated using public GitHub followers. The Visibility Gap compares evidence-backed capability with that visibility proxy.
+This directly addresses the false-positive pattern where a newly active account, star-heavy account, or short burst of public activity could look like a breakout trajectory.
 
-Followers are an imperfect proxy. A high Visibility Gap is therefore a supporting signal, not proof that the market has overlooked someone.
+## Visibility Gap
 
-### Evidence Confidence
+Current visibility is approximated using log-scaled GitHub followers. Followers are a weak proxy for market visibility, so Visibility Gap is a supporting signal rather than proof of under-recognition.
 
-Evidence Confidence increases with independent supporting evidence and decreases when evidence is missing, noisy, or concentrated.
-
-Current confidence logic includes:
-
-- number of observed repositories,
-- presence of a public name,
-- external merged PR evidence,
-- recognized upstream evidence,
-- maintainer-approved evidence,
-- self-owned evidence concentration risk,
-- bot / course / tutorial noise,
-- whether external validation was actually inspected.
+v0.2.7 reduces the follower proxy's saturation rate and lowers the degree to which Capability is effectively counted twice through the gap calculation. This remains an unresolved research dimension and must be tested empirically.
 
 ## Evidence Mix
 
-Ghost Talent distinguishes:
+Ghost Talent distinguishes self-owned repository evidence, external repository contributions, verified external PR evidence, verified research evidence and unclassified repository evidence.
 
-- self-owned repository evidence,
-- external repository contributions,
-- verified external PR evidence,
-- verified research evidence,
-- unclassified repository evidence.
-
-If more than 80% of weighted evidence is self-owned repository activity and there is no external merged PR, confidence is reduced.
+Self-owned concentration cannot independently create an emerging recommendation.
 
 ## Ghost Radar
 
-Ghost Radar asks a narrower question than Ghost Score:
-
-> Which candidates deserve technical attention now?
-
-Current formula:
-
 `Radar = 0.35 External Validation + 0.25 Momentum + 0.20 Visibility Gap + 0.15 Capability + 0.05 Evidence Confidence`
+
+Radar is a prioritization score, not a recommendation by itself.
 
 ## Recommendation states
 
-A candidate is never recommended merely because Radar is high.
+**STRONG SIGNAL** requires Radar >= 75, External Validation >= 70, Evidence Confidence >= 65, low current visibility, sufficient momentum history, and recent same-PR owner/member-approved core-path evidence.
 
-### STRONG SIGNAL
+**EARLY SIGNAL** requires Radar >= 65, External Validation >= 50, Evidence Confidence >= 55, low current visibility, sufficient momentum history, recent recognized-upstream evidence, plus recent owner/member approval or changed-file core-path evidence.
 
-Requires all of the following:
+**WATCH** is used when internal capability or Radar is interesting but the stronger external-validation gates are not satisfied.
 
-- Radar >= 75,
-- External Validation >= 70,
-- Evidence Confidence >= 65,
-- GitHub followers < 500,
-- recent same-PR evidence of a maintainer-approved core-path contribution.
+**PROVEN / ALREADY VISIBLE** routes strong candidates with high existing visibility away from emerging recommendations.
 
-### EARLY SIGNAL
-
-Requires all of the following:
-
-- Radar >= 65,
-- External Validation >= 50,
-- Evidence Confidence >= 55,
-- GitHub followers < 500,
-- recent recognized-upstream evidence,
-- plus recent maintainer approval or recent changed-file core-path evidence.
-
-### WATCH
-
-Used when the candidate has interesting internal capability or a reasonably high Radar score, but current evidence does not satisfy the stronger external-validation gates.
-
-### PROVEN / ALREADY VISIBLE
-
-Strong externally validated candidates with high existing visibility are routed away from emerging recommendations.
-
-Current visible gate:
-
-- External Validation >= 60,
-- followers >= 500.
-
-This state means "strong, but no longer a ghost".
-
-### LOW CONFIDENCE
-
-Used when:
-
-- external validation was not inspected,
-- noise is flagged,
-- or confidence is below the minimum recommendation threshold.
+**LOW CONFIDENCE** is used when external validation is not inspected, evidence is noisy, or confidence is below the minimum threshold.
 
 ## Important invariants
 
-1. **High GitHub activity alone cannot create EARLY or STRONG.**
-2. **Self-owned repository activity is not external validation.**
-3. **A famous strong candidate should not be mislabeled as emerging.**
-4. **Missing external evidence caps recommendation confidence.**
-5. **Noise can block recommendation even when raw activity is high.**
-6. **Historical evidence and recent evidence are not treated as equivalent for emerging signals.**
+1. High GitHub activity alone cannot create EARLY or STRONG.
+2. Self-owned repository activity is not external validation.
+3. A merged PR is not automatically a substantive contribution.
+4. A recognized upstream repository is context, not proof of technical depth.
+5. Missing history does not become synthetic acceleration.
+6. GitHub stars, forks and general issue activity do not drive Momentum.
+7. A famous strong candidate should not be mislabeled as emerging.
+8. Missing external evidence caps recommendation confidence.
+9. Noise can block recommendation even when raw activity is high.
+10. Historical and recent evidence are not treated as equivalent.
 
 ## Known weaknesses
 
-The current score is intentionally explicit about unresolved weaknesses:
+The current model still has unresolved weaknesses:
 
-- Capability and Momentum may still be statistically correlated.
-- GitHub followers are only a rough visibility proxy.
-- deterministic thresholds are not calibrated probabilities.
-- public GitHub activity can overrepresent people whose work is already public and underrepresent excellent closed-source engineers.
-- recognized-upstream coverage is incomplete.
-- external PR inspection is bounded, not a complete technical review.
+- Capability and Momentum may remain statistically correlated.
+- GitHub followers remain a rough visibility proxy.
+- thresholds are not calibrated probabilities.
+- public GitHub evidence undercovers excellent closed-source engineers.
+- recognized-upstream coverage is incomplete and partly curated.
+- PR inspection is bounded, not a complete code review.
+- GitHub public-event history is incomplete and can be truncated.
+- OpenAlex cross-source identity coverage is conservative and sparse.
 
 These weaknesses should be measured rather than explained away.
 
-## Correlation and adversarial validation
+## Credibility validation
 
-Before prospective benchmark outcomes mature, Ghost Talent runs credibility checks for:
+Before prospective outcomes mature, Ghost Talent uses four separate credibility layers:
 
-- component correlation,
-- self-owned activity concentration,
-- activity-only false positives,
-- documentation / tiny-PR style gaming patterns,
-- bot / course noise,
-- already-visible strong candidates,
-- recommendation-state invariants.
+- adversarial / anti-gaming tests,
+- recommendation-state invariants,
+- component correlation analysis,
+- identity audit protocol.
 
-See `docs/ADVERSARIAL_TESTS.md`.
-
-These tests are sanity checks, **not predictive-validity evidence**.
+These are sanity checks, not predictive-validity evidence.
 
 ## Historical evaluation
 
-Every score carries a `score_version`. Historical snapshots preserve the version used at observation time.
+Every score carries a `score_version`. Any material change to weights, normalization, evidence semantics or recommendation gates creates a new score version.
 
-Any material change to weights, normalization, thresholds, evidence semantics, or recommendation gates requires a new score version.
+The first real benchmark cohort remains frozen on score version `0.1.5` and must never be recomputed using v0.2.7.
 
-Historical evaluation may only use evidence observable on or before the original snapshot `as_of_date`.
+Retrospective validation may only use evidence proven to have been observable at the historical `as_of_date`; current follower counts or current repository state may not be injected into historical rankings.
 
-The first real benchmark cohort remains frozen on score version `0.1.5` and must never be recomputed using v0.2.6.
+Prospective benchmark outcomes at 30 / 90 / 180 days remain the primary test of predictive validity.
 
 ## Non-goals
 
-Ghost Score is not:
+Ghost Score is not a hiring decision, résumé score, probability of success, popularity score, substitute for expert technical review, or guarantee of future breakout.
 
-- a hiring decision,
-- a résumé score,
-- a probability of success,
-- a popularity score,
-- a substitute for expert technical review,
-- a guarantee of future breakout.
-
-For the broader methodology and publication policy, see `docs/METHODOLOGY.md`.
+See `docs/METHODOLOGY.md`, `docs/ADVERSARIAL_TESTS.md`, and `docs/CREDIBILITY_PHASE.md`.
