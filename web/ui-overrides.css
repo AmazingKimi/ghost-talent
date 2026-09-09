@@ -22,5 +22,9 @@ html[data-theme="dark"] .preference-actions button.active{background:#eaf1ff;col
 .evidence-list,.contribution-list{display:grid;gap:10px}.evidence-item{border:1px solid var(--line);background:var(--input);border-radius:14px;padding:13px}.evidence-item p{margin:8px 0}.evidence-item-head{display:flex;align-items:center;justify-content:space-between;gap:12px}.evidence-item-head strong{font-size:13px}.dossier-link{font-size:11px;margin-top:4px}
 .contribution-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr) auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(120,140,180,.13)}.contribution-row:last-child{border-bottom:0}
 .trajectory-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.trajectory-grid>div{background:var(--input);border-radius:12px;padding:11px}.trajectory-grid strong{display:block;margin-top:4px;font-size:14px}
+.card .btn.primary{height:35px;background:rgba(255,255,255,.22);color:var(--ink);border:1px solid rgba(103,124,166,.28);box-shadow:none;font-size:10px;font-weight:750;letter-spacing:.01em;transition:background .16s ease,border-color .16s ease,transform .16s ease}
+.card .btn.primary:hover{background:rgba(255,255,255,.48);border-color:rgba(73,104,162,.42);transform:translateY(-1px)}
+html[data-theme="dark"] .card .btn.primary{background:rgba(255,255,255,.035);color:var(--ink);border-color:rgba(164,188,234,.2)}
+html[data-theme="dark"] .card .btn.primary:hover{background:rgba(255,255,255,.08);border-color:rgba(164,188,234,.34)}
 @media(max-width:1000px){.settings-preferences{grid-template-columns:1fr 1fr}.github-connect-card{grid-column:1/-1}}
 @media(max-width:700px){.settings-preferences{grid-template-columns:1fr}.github-connect-card{grid-column:auto}.dossier-identity-row{display:block}.profile-cta{margin-top:8px}.contribution-row{grid-template-columns:1fr}.trajectory-grid{grid-template-columns:1fr 1fr}}
